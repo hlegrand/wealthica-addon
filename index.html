@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Portfolio Monitor</title>
-  <script src="https://wealthica.github.io/wealthica.js/dist/addon.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script type="text/javascript" src="https://wealthica.github.io/wealthica.js/dist/addon.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --bg: #0f1117;
@@ -266,6 +267,8 @@
     var perfChart = null;
     var allocChart = null;
     var sortState = {};
+
+    $(function () {
 
     // ── Formatting helpers ──
     function fmt(n, decimals) {
@@ -630,11 +633,11 @@
       addonOptions = options;
       loadAllData();
     }).on('update', function(options) {
-      for (var key in options) {
-        if (options.hasOwnProperty(key)) addonOptions[key] = options[key];
-      }
+      addonOptions = $.extend(addonOptions, options);
       loadAllData();
     });
+
+    }); // end $(function)
   </script>
 </body>
 </html>
