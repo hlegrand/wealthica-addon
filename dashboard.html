@@ -20,6 +20,15 @@
     .btn-s{background:var(--border)}
     #fileIn{display:none}
 
+    /* Live status */
+    .live-bar{display:flex;align-items:center;gap:8px;font-size:11px}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+    .live-dot.off{background:var(--dim);animation:none}
+    .live-dot.err{background:var(--red);animation:none}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .live-time{color:var(--dim)}
+    .live-label{color:var(--green);font-weight:600}
+
     /* Landing */
     #landing{display:flex;flex-direction:column;align-items:center;justify-content:center;height:85vh;text-align:center}
     #landing h2{font-size:26px;margin-bottom:6px}
@@ -106,6 +115,11 @@
   <div class="hdr">
     <h1>Portfolio Dashboard</h1>
     <div class="hdr-r">
+      <div class="live-bar">
+        <span class="live-dot off" id="liveDot"></span>
+        <span class="live-label" id="liveLabel">--</span>
+        <span class="live-time" id="liveTime"></span>
+      </div>
       <span class="hdr-date" id="eDate"></span>
       <button class="btn btn-s" id="reloadBtn">Load another file</button>
     </div>
@@ -243,6 +257,25 @@ function loadF(f){
   r.readAsText(f);
 }
 
+function loadJSON(data){
+  D=data;renderAll();$('landing').style.display='none';$('app').style.display='block';
+}
+
+// ── Auto-load: try fetch first, then fall back to embedded data ──
+(function(){
+  var today=new Date().toISOString().substring(0,10);
+  var files=['wealthica-export-'+today+'.json','wealthica-export.json'];
+  function tryNext(i){
+    if(i>=files.length){
+      // Fallback: load embedded data if available
+      if(typeof EMBEDDED_DATA!=='undefined'&&EMBEDDED_DATA)loadJSON(EMBEDDED_DATA);
+      return;
+    }
+    fetch(files[i]).then(function(r){if(!r.ok)throw'';return r.json()}).then(function(data){loadJSON(data)}).catch(function(){tryNext(i+1)});
+  }
+  tryNext(0);
+})();
+
 // ── Tabs ──
 $$('.tab').forEach(function(b){
   b.onclick=function(){
@@ -260,6 +293,119 @@ function renderAll(){
   var pos=D.positions||[],tx=D.transactions||[],hist=D.history||[];
   if(D.exportDate)$('eDate').textContent='Data: '+D.exportDate.substring(0,10);
   rSummary(pos,tx);rOverview(pos,hist);rHoldings(pos);rSectors(pos);rDividends(tx);rTransactions(tx);rSignals(pos,tx);
+  startLive();
+}
+
+// ══════════════════════════════════════════
+//  LIVE PRICE REFRESH
+// ══════════════════════════════════════════
+var liveInterval=null;
+var CORS_PROXY='https://corsproxy.io/?url=';
+
+function yahooSym(p){
+  var sec=p.security||{};
+  var sym=sec.symbol||'';
+  if(sec.currency==='cad'&&sec.geo==='Canada'&&sym.indexOf('.TO')<0)return sym+'.TO';
+  return sym;
+}
+
+function startLive(){
+  if(liveInterval)clearInterval(liveInterval);
+  setLiveStatus('loading','Fetching...');
+  fetchLivePrices();
+  liveInterval=setInterval(fetchLivePrices,30000);
+}
+
+function setLiveStatus(state,msg,time){
+  var dot=$('liveDot'),lbl=$('liveLabel'),tm=$('liveTime');
+  dot.className='live-dot'+(state==='ok'?'':state==='loading'?' off':' err');
+  lbl.textContent=msg||'';
+  lbl.style.color=state==='ok'?'var(--green)':state==='loading'?'var(--dim)':'var(--red)';
+  if(time)tm.textContent=time;
+}
+
+function fetchLivePrices(){
+  if(!D||!D.positions||!D.positions.length)return;
+  setLiveStatus('loading','Updating...');
+
+  // Build symbol list
+  var syms=[];
+  D.positions.forEach(function(p){
+    var ys=yahooSym(p);
+    if(ys)syms.push(ys);
+  });
+
+  // Also fetch USD/CAD
+  syms.push('USDCAD=X');
+
+  // Fetch each symbol via Yahoo v8 chart endpoint through CORS proxy
+  var results={};
+  var done=0;
+  var total=syms.length;
+
+  syms.forEach(function(sym){
+    var url=CORS_PROXY+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1d&range=1d');
+    fetch(url).then(function(r){return r.json()}).then(function(data){
+      var meta=(data.chart&&data.chart.result&&data.chart.result[0]&&data.chart.result[0].meta)||{};
+      results[sym]={
+        price:meta.regularMarketPrice||null,
+        prevClose:meta.chartPreviousClose||meta.previousClose||null,
+        high:meta.regularMarketDayHigh||null,
+        low:meta.regularMarketDayLow||null
+      };
+    }).catch(function(){
+      results[sym]=null;
+    }).finally(function(){
+      done++;
+      if(done>=total)applyLivePrices(results);
+    });
+  });
+}
+
+function applyLivePrices(results){
+  var usdcad=(results['USDCAD=X']&&results['USDCAD=X'].price)||1.37;
+  var updated=0;
+
+  D.positions.forEach(function(p){
+    var ys=yahooSym(p);
+    var q=results[ys];
+    if(!q||!q.price)return;
+
+    var sec=p.security||{};
+    var qty=p.quantity||0;
+    var livePrice=q.price;
+
+    // Update security live data
+    sec.last_price=livePrice;
+    if(q.prevClose){
+      sec.day_change=livePrice-q.prevClose;
+      sec.day_change_pct=((livePrice-q.prevClose)/q.prevClose)*100;
+    }
+
+    // Calculate market value in CAD
+    var mv;
+    if(sec.currency==='usd'){
+      mv=livePrice*qty*usdcad;
+    }else{
+      mv=livePrice*qty;
+    }
+
+    p.market_value=Math.round(mv*100)/100;
+    p.gain_amount=Math.round((p.market_value-(p.book_value||0))*100)/100;
+    p.gain_percent=(p.book_value&&p.book_value>0)?Math.round((p.gain_amount/p.book_value)*10000)/10000:0;
+    updated++;
+  });
+
+  // Re-render everything with new prices
+  var pos=D.positions||[],tx=D.transactions||[];
+  rSummary(pos,tx);
+  rHoldings(pos,$('hF').value);
+  rSectors(pos);
+  rSignals(pos,tx);
+
+  var now=new Date();
+  var timeStr=now.toLocaleTimeString('en-CA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  setLiveStatus('ok','LIVE',timeStr+' (USD/CAD '+usdcad.toFixed(4)+')');
 }
 
 // ── Summary ──
@@ -278,8 +424,15 @@ function rSummary(pos,tx){
 
 // ── Overview ──
 function rOverview(pos,hist){
-  var lb=[],vl=[];
-  hist.forEach(function(h){if(h.date){lb.push(h.date.substring(0,10));vl.push(h.value||h.total||0)}});
+  // Aggregate history by date (API returns per-account entries)
+  var byDate={};
+  hist.forEach(function(h){
+    if(!h.date)return;
+    var d=h.date.substring(0,10);
+    byDate[d]=(byDate[d]||0)+(h.value||h.currency_value||h.total||0);
+  });
+  var sortedDates=Object.keys(byDate).sort();
+  var lb=sortedDates,vl=sortedDates.map(function(d){return byDate[d]});
   if(CH.p)CH.p.destroy();
   CH.p=new Chart($('cPerf'),{type:'line',data:{labels:lb,datasets:[{data:vl,borderColor:'#6c5ce7',backgroundColor:'rgba(108,92,231,.1)',fill:true,tension:.3,pointRadius:0,pointHitRadius:10,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmt(c.parsed.y)}}}},scales:{x:{ticks:{color:'#8b8fa3',maxTicksLimit:8,font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#8b8fa3',font:{size:10},callback:function(v){return fmt(v,0)}},grid:{color:'rgba(255,255,255,.05)'}}},interaction:{intersect:false,mode:'index'}}});
 
@@ -500,5 +653,6 @@ function cmpT(a,b,k,asc){
   return va<vb?(asc?-1:1):va>vb?(asc?1:-1):0;
 }
 </script>
+<script>var EMBEDDED_DATA={"exportDate":"2026-04-15T15:57:11.912Z","positions":[{"_id":"69df99f42ed2fd2147aa0a19","security":{"_id":"67649cc71e8a2c958bb84266","currency":"usd","symbol":"LEVGQ","type":"equity","aliases":["THE LION ELECTRIC COMPANY","LION ELEC CO COM","LION ELECTRIC COMPANY","LION ELEC CO","LION ELECTRIC COMPANY (THE)","COMPAGNIE ELECTRIQUE LION","Lion Electric Co (The)","LION ELECTRIC COMPANY *","COMPAGNIE ELECTRIQUE LIO*"],"name":"THE LION ELECTRIC COMPANY","geo":"United States","high_date":"2025-06-08T15:59:49.211Z","high_price":0.25549999999999995,"last_date":"2026-04-15T16:04:44.700774Z","last_price":0.024,"low_date":"2025-12-03T01:24:56.541Z","low_price":0.00019825019963636364,"exchange":"US OTC","industry":"Automobiles","sector":"Information Technology","id":"67649cc71e8a2c958bb84266","day_high":0.004,"day_low":0.003,"volume":38993},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"non-registered-xmhr2zc_:cash:cad","quantity":11,"book_value":241.56,"market_value":0,"security_book_value":175.5906089652,"security_market_value":0,"currency":"cad","gain_percent":-1,"gain_currency_amount":-241.56,"gain_amount":-241.56}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":241.56,"market_value":0.36,"quantity":11,"gain_percent":-0.9985,"gain_amount":-241.2,"currency":"cad","id":"69df99f42ed2fd2147aa0a19"},{"_id":"69df99f32ed2fd2147aa090a","security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","aliases":["INVSTMT MNGR SR TR II ETF","Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF"],"cusip":"46152A569","name":"INVSTMT MNGR SR TR II ETF","geo":"United States","high_date":"2026-04-15T14:00:19.766Z","high_price":42.710564265600006,"last_date":"2026-04-15T16:04:44.700834Z","last_price":41.63,"low_date":"2026-04-02T15:10:16.795Z","low_price":29.019899999999996,"id":"69ce86d8f6bdbcaa49d6981d","day_high":44.805,"day_low":41.071,"volume":177595},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":13,"book_value":591.27,"market_value":763.84,"security_book_value":429.79574169089994,"security_market_value":554.84,"currency":"cad","gain_percent":0.2919,"gain_currency_amount":172.57000000000005,"gain_amount":172.57000000000005}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":591.27,"market_value":743.6,"quantity":13,"gain_percent":0.2576,"gain_amount":152.33,"currency":"cad","id":"69df99f32ed2fd2147aa090a"},{"_id":"69df99f32ed2fd2147aa090b","user":"69df990fcd159040851807c4","security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","aliases":["Global X Defence Tech Index ETF - Class A","GLOBAL X DEFENCE TECH INDEX ETF UNITS CLASS A","GLOBAL X DEFENCE TECH INDEX ETF","GLOBAL X INVESTMENTS CANADA INC. DEFENCE TECH INDEX ETF","GLB X DEF TECH INDX ETF-A","GLOBAL X DEFENSE TACH INDEX ETF UNIT CL A","GLOBAL X DEFENSE TECH INDEX ETF UNIT CL A","GLOBAL X DEF TECH IDX ETF CL A","GLOBAL X FUNDS GLOBAL X DEFENSE TECH ETF","GLOBAL X DEFENCE TECH ETF"],"name":"Global X Defence Tech Index ETF - Class A","geo":"Canada","high_date":"2025-12-02T17:57:43.010Z","high_price":86.03140625,"last_date":"2026-04-15T16:04:44.700850Z","last_price":29.35,"low_date":"2025-05-14T04:03:15.669Z","low_price":20.94,"id":"682415fe38356aefc56863f3","day_high":29.51,"day_low":29.35,"volume":7217},"__v":0,"categories":[{"category":"Canadian Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":28,"book_value":733.41,"market_value":823.76,"currency":"cad","gain_percent":0.1232,"gain_currency_amount":90.35000000000002,"gain_amount":90.35000000000002}],"override_investments":[],"class":"equity","category":"Canadian Stocks","geo":null,"book_value":733.41,"market_value":821.8,"quantity":28,"gain_percent":0.1205,"gain_amount":88.39,"currency":"cad","id":"69df99f32ed2fd2147aa090b"},{"_id":"69df99f32ed2fd2147aa090e","security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","last_price":377.075,"high_date":"2026-02-24T02:17:25.810Z","high_price":506.34461538461534,"low_date":"2025-11-10T01:15:37.893Z","low_price":93.57,"last_date":"2026-04-15T16:04:44.700862Z","aliases":["TAIWAN SEMICONDUCTOR MANUFAC","TAIWAN SEMICON MAN SP/ADR","TAIWAN SEMICONDUCTOR MFG CO LTD-SPONSORED ADR REPSTG 5 COM","TAIWAN SEMICONDUCTOR-SP ADR","Taiwan Semiconductor Manufacturing Company Ltd.","TAIWAN SEMICONDUCTOR MFG CO SP","Taiwan Semiconductor Manufacturing Co Ltd","Taiwan Semiconductor Manufacturing ADR Representing Five","TAIWAN SEMICONDUCTOR MANUFACTURING SPON ADS EACH REP 5 ORD TWD10","CALL TSM:US 17JAN2020 45","TAIWAN SEMICON MFG CO S/ADR","Taiwan Semiconductor Manufactur","TAIWAN SEMICONDUCTR F SPONSORED ADR 1 ADR REPS 5 ORD SHS","TAIWAN SEMI","Taiwan Semiconductor Manufacturing Compa","TAIWAN SEMICONDUCTOR MFG CO LTD ADR","Taiwan Semiconductor Manufacturing","TAIWAN SEMICON MFG CO","TSM TAIWAN SEMICONDUCTOR MFG CO SP","TAIWAN SEMICONDUCTOR MFG CO ADS","TAIWAN SEMICONDUCTOR MANUSPONSORED ADR","Taiwan Semiconductor MFG.","Taiwan Semiconductor Manufacturing - ADR","TAIWAN SEMICON MFG CO LTD","TAIWAN SEMICONDUCTOR MFG CO LTD-SPONSORED ADR REPSTG 5 COM TAIWAN SEMICONDUCTOR MFG CO LTD-SPONSORED ADR REPSTG 5 COM"],"geo":"United States","exchange":"New York Stock Exchange","industry":"Electronic Equipment, Instruments & Components","sector":"Information Technology","id":"574b782a109d820e001ae529","day_high":381.97,"day_low":376.51,"volume":6521872},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":7,"book_value":2556.88,"market_value":3660.96,"security_book_value":1858.6028988696,"security_market_value":2659.23,"currency":"cad","gain_percent":0.4318,"gain_currency_amount":1104.08,"gain_amount":1104.08}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":2556.88,"market_value":3626.71,"quantity":7,"gain_percent":0.4184,"gain_amount":1069.83,"currency":"cad","id":"69df99f32ed2fd2147aa090e"},{"_id":"69df99f32ed2fd2147aa0910","user":"69df990fcd159040851807c4","security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","aliases":["VERTIV HOLDINGS CO","VERTIV HOLDINGS LLC CL-A","Vertiv Holdings LLC","VERTIV HLDGS LLC A","VERTIV HOLDINGS LLC CLASS A COMMON STOCK","VERTIV HOLDINGS CO-A","Vertiv Holdings Co (Class A)","VERTIV HOLDINGS LLC","Vertiv Holdings Co","Vertiv Holdings","Vertiv Holdings Co - Ordinary Shares - Class A","VERTIV HLD A ORD","Vertiv Holdings Co. Class A","VERTIV HOLDINGS LLC CLASS A (as at October 31, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 17, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 18, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 19, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 20, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 21, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 28, 2025)"],"name":"VERTIV HOLDINGS CO","last_date":"2026-04-15T16:04:44.700874Z","last_price":302.57,"high_date":"2026-04-14T20:12:09.016Z","high_price":427.9606,"low_date":"2025-05-13T19:15:56.257Z","low_price":51.128732698899995,"geo":"United States","exchange":"New York Stock Exchange","industry":"Electronic Equipment, Instruments & Components","sector":"Information Technology","id":"5e954087fdf3e1c3ab77d6d5","day_high":310.99,"day_low":302.275,"volume":2323093},"__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":1,"book_value":340.05,"market_value":427.47,"security_book_value":247.1832529335,"security_market_value":310.51,"currency":"cad","gain_percent":0.2571,"gain_currency_amount":87.42000000000002,"gain_amount":87.42000000000002}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":340.05,"market_value":415.73,"quantity":1,"gain_percent":0.2226,"gain_amount":75.68,"currency":"cad","id":"69df99f32ed2fd2147aa0910"},{"_id":"69df99f32ed2fd2147aa0911","security":{"_id":"651226b7d99c4be5fbb2846a","currency":"cad","symbol":"XAD","type":"equity","aliases":["ISHARES US AERO&DEF ETF","iShares U.S. Aerospace & Defense ETF - CAD","ISHARES US AEROSPACE & DEFENSE INDE CAD UNIT","ISHARES U S AEROSPACE & DEFENSE INDEX ETF CAD UNIT","ISHARES U.S AEROSPACE & DEFENSE INDX ETF","ISHARES U S AEROSPACE & DEFENS","BLACKROCK ASSET MANAGEMENT CA LTD ISHARES U.S. AEROSPACE & DEFENSE INDEX E","ISHARE US AERO & DEFENSE ETF","iShares US Aerospace & Defense Index ETF"],"name":"ISHARES US AERO&DEF ETF","high_date":"2026-03-02T00:00:00.000Z","high_price":110.67,"last_date":"2026-04-15T16:04:44.700884Z","last_price":104.04,"low_date":"2025-04-22T00:00:00.000Z","low_price":65.39,"geo":"Canada","id":"651226b7d99c4be5fbb2846a","day_high":105.96,"day_low":104.04,"volume":1704},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"Canadian Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":3,"book_value":274.65,"market_value":315.06,"currency":"cad","gain_percent":0.1471,"gain_currency_amount":40.410000000000025,"gain_amount":40.410000000000025}],"override_investments":[],"class":"equity","category":"Canadian Stocks","geo":null,"book_value":274.65,"market_value":312.12,"quantity":3,"gain_percent":0.1364,"gain_amount":37.47,"currency":"cad","id":"69df99f32ed2fd2147aa0911"}],"transactions":[{"_id":"69df9a02a060da04ab4d9c34","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-05T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-zBecDkZigkRIapF84k1jybJegM","currency_amount":0.69,"description":"iShares U.S. Aerospace & Defense ETF CAD: 30-DEC-2025 (record date) 3.0000 shares, gross 0.69 CAD","settlement_date":"2026-01-05T00:00:00.000Z","processing_date":"2026-01-05T00:00:00.000Z","symbol":"XAD","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"651226b7d99c4be5fbb2846a","currency":"cad","symbol":"XAD","type":"equity","name":"ISHARES US AERO&DEF ETF","id":"651226b7d99c4be5fbb2846a"},"__v":0,"id":"69df9a02a060da04ab4d9c34"},{"_id":"69df9a02a060da04ab4d9c3d","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-08T00:00:00.000Z","type":"tax","origin_type":"Non Resident Withholding Tax","origin_id":"transaction-7a_GyvSBHAZhD0zOI1Nc5eno7EM","currency_amount":-1.63,"description":"Taiwan Semicontucter MFG ADR: Non-resident tax withheld at source (1.17 USD, convert to CAD @ 1.392879)","settlement_date":"2026-01-08T00:00:00.000Z","processing_date":"2026-01-08T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c3d"},{"_id":"69df9a02a060da04ab4d9c46","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-08T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-BKQ8Qz4Me1Dff4oUYhfd3QSzftA","currency_amount":10.760015980287651,"description":"Taiwan Semicontucter MFG ADR: 11-DEC-2025 (record date) 7.0000 shares, gross 5.57 USD, convert to CAD @ 1.392879","settlement_date":"2026-01-08T00:00:00.000Z","processing_date":"2026-01-08T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c46"},{"_id":"69df9a02a060da04ab4d9c4f","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-08T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-bSVm5s1FxTUNPMbWcohHiGEIjA","currency_amount":1.28,"description":"Global X Defence Tech Index ETF Class A: 31-DEC-2025 (record date) 28.0000 shares, gross 1.28 CAD","settlement_date":"2026-01-08T00:00:00.000Z","processing_date":"2026-01-08T00:00:00.000Z","symbol":"SHLD","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c4f"},{"_id":"69df9a02a060da04ab4d9c58","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-12T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-Qc3hqHCxO1CN4P_ls6OgAne1o7E","currency_amount":0,"description":"LOAN 9.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-01-12T00:00:00.000Z","processing_date":"2026-01-12T00:00:00.000Z","symbol":"SHLD","quantity":9,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c58"},{"_id":"69df9a02a060da04ab4d9c61","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-14T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-oMz4iw43_G7LTxDEBFXUka0UqA","currency_amount":0,"description":"RECALL 6.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-01-14T00:00:00.000Z","processing_date":"2026-01-14T00:00:00.000Z","symbol":"SHLD","quantity":-6,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c61"},{"_id":"69df9a02a060da04ab4d9c6a","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-15T00:00:00.000Z","type":"interest","origin_type":"Interest","origin_id":"transaction-4_6fEGfRLR7bTkS50y52raKo4A","currency_amount":0.01,"description":"Accrued lending fee for DEC-25 of 0.0100 on 2026-01-15","settlement_date":"2026-01-15T00:00:00.000Z","processing_date":"2026-01-15T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9c6a"},{"_id":"69df9a02a060da04ab4d9c71","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-15T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-THLpdazalyw0a7fR7Z8aob8VVKc","currency_amount":0,"description":"RECALL 3.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-01-15T00:00:00.000Z","processing_date":"2026-01-15T00:00:00.000Z","symbol":"SHLD","quantity":-3,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c71"},{"_id":"69df9a02a060da04ab4d9c7a","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-16T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-vV0teiGtWV9yPnXYAbGnOcWL1QE","currency_amount":0,"description":"LOAN 6.0000 of Taiwan Semicontucter MFG ADR","settlement_date":"2026-01-16T00:00:00.000Z","processing_date":"2026-01-16T00:00:00.000Z","symbol":"TSM","quantity":6,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c7a"},{"_id":"69df9a02a060da04ab4d9c83","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-20T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-t7icTO94iTK7NVyPM2Jy8wMDcmk","currency_amount":0,"description":"RECALL 1.0000 of Taiwan Semicontucter MFG ADR","settlement_date":"2026-01-20T00:00:00.000Z","processing_date":"2026-01-20T00:00:00.000Z","symbol":"TSM","quantity":-1,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c83"},{"_id":"69df9a02a060da04ab4d9c8c","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-21T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-FtqQS32JMxgTPVkN0oqzmaHfkL0","currency_amount":0,"description":"RECALL 5.0000 of Taiwan Semicontucter MFG ADR","settlement_date":"2026-01-21T00:00:00.000Z","processing_date":"2026-01-21T00:00:00.000Z","symbol":"TSM","quantity":-5,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c8c"},{"_id":"69df9a02a060da04ab4d9c95","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-13T00:00:00.000Z","type":"interest","origin_type":"Interest","origin_id":"transaction-vc1VJEQ8h288ySJgMNyfM57iliE","currency_amount":0.01,"description":"Accrued lending fee for JAN-26 of 0.0100 on 2026-02-13","settlement_date":"2026-02-13T00:00:00.000Z","processing_date":"2026-02-13T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9c95"},{"_id":"69df9a02a060da04ab4d9c9c","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-18T00:00:00.000Z","type":"deposit","origin_type":"Contribution","origin_id":"transaction-BqFXWY8kDNyOuJkXDvpwHNjxgA","currency_amount":500,"description":"Transfer amount of CAD 500.0000 at 2026-02-18","settlement_date":"2026-02-18T00:00:00.000Z","processing_date":"2026-02-19T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9c9c"},{"_id":"69df9a02a060da04ab4d9ca3","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-19T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-J5MHrEFFOh4TwPKjGevJU4qoUXA","currency_amount":-172.3,"description":"Bought 5.0 of COHX - Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF for 172.3 CAD","settlement_date":"2026-02-20T00:00:00.000Z","processing_date":"2026-02-19T00:00:00.000Z","symbol":"COHX","quantity":5,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","name":"INVSTMT MNGR SR TR II ETF","id":"69ce86d8f6bdbcaa49d6981d"},"__v":0,"id":"69df9a02a060da04ab4d9ca3"},{"_id":"69df9a02a060da04ab4d9cac","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-19T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-69n5jZeIVtFKqr7lPf_mIoM2xKw","currency_amount":-340.05,"description":"Bought 1.0 of VRT - Vertiv Holdings Co (Class A) for 340.05 CAD","settlement_date":"2026-02-20T00:00:00.000Z","processing_date":"2026-02-19T00:00:00.000Z","symbol":"VRT","quantity":1,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","name":"VERTIV HOLDINGS CO","id":"5e954087fdf3e1c3ab77d6d5"},"__v":0,"id":"69df9a02a060da04ab4d9cac"},{"_id":"69df9a02a060da04ab4d9cb5","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-20T00:00:00.000Z","type":"deposit","origin_type":"Contribution","origin_id":"transaction-ToOMV9pjCdswphb5II7mNxU_zc","currency_amount":400,"description":"Transfer amount of CAD 400.0000 at 2026-02-20","settlement_date":"2026-02-20T00:00:00.000Z","processing_date":"2026-02-20T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9cb5"},{"_id":"69df9a02a060da04ab4d9cbc","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-25T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-Og_EhXumgrjdmn8DKx971rig7UE","currency_amount":-359.45,"description":"Bought 7.0 of COHX - Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF for 359.45 CAD","settlement_date":"2026-02-26T00:00:00.000Z","processing_date":"2026-02-25T00:00:00.000Z","symbol":"COHX","quantity":7,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","name":"INVSTMT MNGR SR TR II ETF","id":"69ce86d8f6bdbcaa49d6981d"},"__v":0,"id":"69df9a02a060da04ab4d9cbc"},{"_id":"69df9a02a060da04ab4d9cc5","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-04T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-e08vQvF0Li3YapDDAK966tUxPlg","currency_amount":-59.52,"description":"Bought 1.0 of COHX - Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF for 59.52 CAD","settlement_date":"2026-03-05T00:00:00.000Z","processing_date":"2026-03-04T00:00:00.000Z","symbol":"COHX","quantity":1,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","name":"INVSTMT MNGR SR TR II ETF","id":"69ce86d8f6bdbcaa49d6981d"},"__v":0,"id":"69df9a02a060da04ab4d9cc5"},{"_id":"69df9a02a060da04ab4d9cce","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-04T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-c1yD_d5JP0g4J0GkanXHG54OYPo","currency_amount":0,"description":"LOAN 8.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-03-04T00:00:00.000Z","processing_date":"2026-03-04T00:00:00.000Z","symbol":"SHLD","quantity":8,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9cce"},{"_id":"69df9a02a060da04ab4d9cd7","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-05T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-bn2ycf1_GDZGvk4rUXcb7ZtaS5c","currency_amount":0,"description":"RECALL 8.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-03-05T00:00:00.000Z","processing_date":"2026-03-05T00:00:00.000Z","symbol":"SHLD","quantity":-8,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9cd7"},{"_id":"69df9a02a060da04ab4d9ce0","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-26T00:00:00.000Z","type":"tax","origin_type":"Non Resident Withholding Tax","origin_id":"transaction-17GUlTiHnnL4SzfvgN0myjUxGQw","currency_amount":-0.01,"description":"Vertiv Holdings Co (Class A): Non-resident tax withheld at source (0.01 USD, convert to CAD @ 1.390179)","settlement_date":"2026-03-26T00:00:00.000Z","processing_date":"2026-03-26T00:00:00.000Z","symbol":"VRT","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","name":"VERTIV HOLDINGS CO","id":"5e954087fdf3e1c3ab77d6d5"},"__v":0,"id":"69df9a02a060da04ab4d9ce0"},{"_id":"69df9a02a060da04ab4d9ce9","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-26T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-N6xS4rMFgnshmc7LSkYAbuolIMA","currency_amount":0.11075199929163021,"description":"Vertiv Holdings Co (Class A): 17-MAR-2026 (record date) 1.0000 shares, gross 0.06 USD, convert to CAD @ 1.390179","settlement_date":"2026-03-26T00:00:00.000Z","processing_date":"2026-03-26T00:00:00.000Z","symbol":"VRT","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","name":"VERTIV HOLDINGS CO","id":"5e954087fdf3e1c3ab77d6d5"},"__v":0,"id":"69df9a02a060da04ab4d9ce9"},{"_id":"69df9a02a060da04ab4d9cf2","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-08T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-5gPPcXROZ9AdYjrEGqu5Xu4ehXA","currency_amount":0,"description":"LOAN 2.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-04-08T00:00:00.000Z","processing_date":"2026-04-08T00:00:00.000Z","symbol":"SHLD","quantity":2,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9cf2"},{"_id":"69df9a02a060da04ab4d9cfb","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-09T00:00:00.000Z","type":"tax","origin_type":"Non Resident Withholding Tax","origin_id":"transaction-1zoFTklwAVGfz1PXILcOZp4_vW0","currency_amount":-1.91,"description":"Taiwan Semiconductor Manufacturing: Non-resident tax withheld at source (1.38 USD, convert to CAD @ 1.387548)","settlement_date":"2026-04-09T00:00:00.000Z","processing_date":"2026-04-09T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9cfb"},{"_id":"69df9a02a060da04ab4d9d04","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-09T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-cfEB4tiDj3SoeQEl1GtA63J9h8o","currency_amount":12.604751950022157,"description":"Taiwan Semiconductor Manufacturing: 17-MAR-2026 (record date) 7.0000 shares, gross 6.57 USD, convert to CAD @ 1.387548","settlement_date":"2026-04-09T00:00:00.000Z","processing_date":"2026-04-09T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9d04"},{"_id":"69df9a02a060da04ab4d9d0d","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-09T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-6SSi_QmzTSZgj2rKYkuQCyNVB0o","currency_amount":0,"description":"RECALL 2.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-04-09T00:00:00.000Z","processing_date":"2026-04-09T00:00:00.000Z","symbol":"SHLD","quantity":-2,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9d0d"}],"history":[{"_id":"69df99f32ed2fd2147aa07bf","institution":"69df99f1cdfc85df2b3ca9ae","date":"2026-04-15T00:00:00.000Z","investment":"rrsp-zFaJa0vyVQ:rrsp:cad","user":"69df990fcd159040851807c4","currency_value":0,"value":0},{"_id":"69df99f32ed2fd2147aa07c0","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-15T00:00:00.000Z","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","currency_value":6012.94,"value":6012.94},{"_id":"69df99f32ed2fd2147aa07c5","institution":"69df99f1cdfc85df2b3ca9ae","user":"69df990fcd159040851807c4","date":"2026-04-15T00:00:00.000Z","investment":"non-registered-xmhr2zc_:cash:cad","currency_value":0.01,"value":0.01}],"liveUpdate":"2026-04-15T16:04:44.701122Z","usdCadRate":1.374};</script>
 </body>
 </html>
