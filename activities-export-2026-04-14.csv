@@ -1,0 +1,71 @@
+date_transaction;date_reglement;compte_id;type_compte;type_activite;sous_type_activite;direction;symbole;nom;devise;quantite;prix_unitaire;commission;montant_net_especes
+2021-02-25;;HQ0KXQS08CAD;Non-enregistré;MoneyMovement;EFT;;;;CAD;1000;;;1000
+2021-03-04;2021-03-04;HQ0KXQS08CAD;Non-enregistré;Trade;BUY;LONG;NGA;Northern Genesis Acquisition Corp;CAD;11;26.975949;0;-296.74
+2021-03-04;2021-03-04;HQ0KXQS08CAD;Non-enregistré;Trade;BUY;LONG;TSM;Taiwan Semiconductor Manufacturing;CAD;4;164.97719667;0;-659.91
+2021-04-16;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.74;;;1.74
+2021-05-10;2021-05-10;HQ0KXQS08CAD;Non-enregistré;Trade;BUY;LONG;LEV;Lion Electric Co (The);CAD;11;21.96;0;-241.56
+2021-05-10;2021-05-10;HQ0KXQS08CAD;Non-enregistré;Trade;SELL;LONG;NGA;Northern Genesis Acquisition Corp;CAD;-11;21.9600004979;0;241.56
+2021-07-16;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.78;;;1.78
+2021-10-14;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.92;;;1.92
+2022-01-13;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.97;;;1.97
+2022-04-14;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.89;;;1.89
+2022-07-14;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.92;;;1.92
+2022-10-13;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.88;;;1.88
+2023-01-13;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.89;;;1.89
+2023-04-13;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.91;;;1.91
+2023-07-13;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;1.82;;;1.82
+2023-10-12;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;2.01;;;2.01
+2024-01-11;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;2.05;;;2.05
+2024-04-11;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;2.38;;;2.38
+2024-07-11;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;2.96;;;2.96
+2024-09-20;;HQ0KXQS08CAD;Non-enregistré;MoneyMovement;E_TRFIN;;;;CAD;300;;;300
+2024-09-20;;HQ0KXQS08CAD;Non-enregistré;MoneyMovement;EFT;;;;CAD;141.54;;;141.54
+2024-09-23;2024-09-23;HQ0KXQS08CAD;Non-enregistré;Trade;BUY;LONG;TSM;Taiwan Semiconductor Manufacturing;CAD;2;241.5217385;0;-483.04
+2024-10-09;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;3.44;;;3.44
+2025-01-09;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;5.28;;;5.28
+2025-04-10;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;5.71;;;5.71
+2025-04-10;;HQ0KXQS08CAD;Non-enregistré;CorporateAction;INTERNAL_REORGANIZATION;LONG;LEVGQ;Lion Electric Co (The);;11;;;
+2025-04-10;;HQ0KXQS08CAD;Non-enregistré;CorporateAction;INTERNAL_REORGANIZATION;LONG;LEV;Lion Electric Co (The);;-11;;;
+2025-05-14;;HQ0KXQS08CAD;Non-enregistré;Interest;;;;;CAD;0.01;;;0.01
+2025-06-13;;HQ0KXQS08CAD;Non-enregistré;Interest;;;;;CAD;0.01;;;0.01
+2025-07-10;;HQ0KXQS08CAD;Non-enregistré;Dividend;;;;;CAD;6.42;;;6.42
+2025-07-15;;HQ0KXQS08CAD;Non-enregistré;Interest;;;;;CAD;0.01;;;0.01
+2025-08-15;;HQ0KXQS08CAD;Non-enregistré;Interest;;;;;CAD;0.01;;;0.01
+2025-09-15;;HQ0KXQS08CAD;Non-enregistré;MoneyMovement;TRANSFER;;;;CAD;-2151.18;;;-2151.18
+2025-09-15;2025-09-15;HQ0KXQS08CAD;Non-enregistré;Trade;SELL;LONG;TSM;Taiwan Semiconductor Manufacturing;CAD;-6;358.5296455;0;2151.18
+2025-09-15;;HQ0KXQS08CAD;Non-enregistré;MoneyMovement;TRANSFER;;;;CAD;-45.88;;;-45.88
+2025-09-15;;HQ0KXQS08CAD;Non-enregistré;Interest;;;;;CAD;0.01;;;0.01
+2025-10-15;;HQ0KXQS08CAD;Non-enregistré;Interest;;;;;CAD;0.01;;;0.01
+2025-09-15;;HQ7ZT6SK3CAD;CELI;MoneyMovement;EFT;;;;CAD;2151.18;;;2151.18
+2025-09-15;2025-09-15;HQ7ZT6SK3CAD;CELI;Trade;BUY;LONG;TSM;Taiwan Semiconductor Manufacturing;CAD;6;358.5296455;0;-2151.18
+2025-09-15;;HQ7ZT6SK3CAD;CELI;MoneyMovement;EFT;;;;CAD;45.88;;;45.88
+2025-09-15;;HQ7ZT6SK3CAD;CELI;MoneyMovement;E_TRFIN;;;;CAD;700;;;700
+2025-09-15;;HQ7ZT6SK3CAD;CELI;MoneyMovement;EFT;;;;CAD;200;;;200
+2025-09-15;;HQ7ZT6SK3CAD;CELI;MoneyMovement;EFT;;;;CAD;500;;;500
+2025-09-16;2025-09-16;HQ7ZT6SK3CAD;CELI;Trade;BUY;LONG;SHLD;Global X Defence Tech Index ETF - Class A;CAD;9;26.2;0;-235.8
+2025-09-16;2025-09-16;HQ7ZT6SK3CAD;CELI;Trade;BUY;LONG;SHLD;Global X Defence Tech Index ETF - Class A;CAD;19;26.19;0;-497.61
+2025-10-09;;HQ7ZT6SK3CAD;CELI;Dividend;;;;;CAD;6.94;;;6.94
+2025-10-15;;HQ7ZT6SK3CAD;CELI;Interest;;;;;CAD;0.01;;;0.01
+2025-10-15;;HQ7ZT6SK3CAD;CELI;Interest;;;;;CAD;0.01;;;0.01
+2025-10-15;;HQ7ZT6SK3CAD;CELI;Interest;;;;;CAD;0.06;;;0.06
+2025-11-14;;HQ7ZT6SK3CAD;CELI;Interest;;;;;CAD;0.01;;;0.01
+2025-11-14;;HQ7ZT6SK3CAD;CELI;Interest;;;;;CAD;0.06;;;0.06
+2025-11-25;2025-11-25;HQ7ZT6SK3CAD;CELI;Trade;BUY;LONG;TSM;Taiwan Semiconductor Manufacturing;CAD;1;405.7009866;0;-405.7
+2025-11-25;2025-11-25;HQ7ZT6SK3CAD;CELI;Trade;BUY;LONG;XAD;iShares U.S. Aerospace & Defense ETF - CAD;CAD;3;91.55;0;-274.65
+2025-12-12;;HQ7ZT6SK3CAD;CELI;Interest;;;;;CAD;0.01;;;0.01
+2026-01-05;;HQ7ZT6SK3CAD;CELI;Dividend;;;;;CAD;0.69;;;0.69
+2026-01-08;;HQ7ZT6SK3CAD;CELI;Dividend;;;;;CAD;1.28;;;1.28
+2026-01-08;;HQ7ZT6SK3CAD;CELI;Dividend;;;;;CAD;7.76;;;7.76
+2026-01-15;;HQ7ZT6SK3CAD;CELI;Interest;;;;;CAD;0.01;;;0.01
+2026-02-13;;HQ7ZT6SK3CAD;CELI;Interest;;;;;CAD;0.01;;;0.01
+2026-02-13;;HQ7ZT6SK3CAD;CELI;Interest;;;;;CAD;0.01;;;0.01
+2026-02-18;;HQ7ZT6SK3CAD;CELI;MoneyMovement;E_TRFIN;;;;CAD;500;;;500
+2026-02-20;;HQ7ZT6SK3CAD;CELI;MoneyMovement;E_TRFIN;;;;CAD;400;;;400
+2026-02-20;2026-02-20;HQ7ZT6SK3CAD;CELI;Trade;BUY;LONG;COHX;Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF;CAD;5;34.4606085978;0;-172.3
+2026-02-20;2026-02-20;HQ7ZT6SK3CAD;CELI;Trade;BUY;LONG;VRT;Vertiv Holdings Co (Class A);CAD;1;340.05278912;0;-340.05
+2026-02-26;2026-02-26;HQ7ZT6SK3CAD;CELI;Trade;BUY;LONG;COHX;Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF;CAD;7;51.3493666485;0;-359.45
+2026-03-05;2026-03-05;HQ7ZT6SK3CAD;CELI;Trade;BUY;LONG;COHX;Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF;CAD;1;59.5219650102;0;-59.52
+2026-03-26;;HQ7ZT6SK3CAD;CELI;Dividend;;;;;CAD;0.08;;;0.08
+2026-04-09;;HQ7ZT6SK3CAD;CELI;Dividend;;;;;CAD;9.12;;;9.12
+;;;;;;;;;;;;;
+Ã€ partir de 2026-04-14 17:42 GMT-04:00;;;;;;;;;;;;;
