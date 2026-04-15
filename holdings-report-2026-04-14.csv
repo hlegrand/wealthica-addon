@@ -1,0 +1,7 @@
+Nom du compte;Type de compte;Classification du compte;Numéro de compte;Symbole;Bourse;MIC;Nom;Type;Quantité;Direction de position;Prix du marché;Devise du prix;Valeur comptable (CAD);Devise de la valeur comptable (CAD);Valeur comptable (Marché);Devise de la valeur comptable (Marché);Valeur marchande;Devise de la valeur marchande;Rendements non réalisés du marché;Devise des rendements non réalisés du marché
+CELI;CELI;Autonome;HQ7ZT6SK3CAD;COHX;BATS;BATS;Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF;EXCHANGE_TRADED_FUND;13;LONG;42.2000;USD;591.27;CAD;423.72989003314477;USD;548.6;USD;124.87010996685523;USD
+CELI;CELI;Autonome;HQ7ZT6SK3CAD;SHLD;TSX;XTSE;Global X Defence Tech Index ETF - Class A;EXCHANGE_TRADED_FUND;28;LONG;29.4400;CAD;733.41;CAD;733.41;CAD;824.32;CAD;90.91;CAD
+CELI;CELI;Autonome;HQ7ZT6SK3CAD;TSM;NYSE;XNYS;Taiwan Semiconductor Manufacturing;EQUITY;7;LONG;380.9700;USD;2556.88;CAD;1841.32085567321512;USD;2667;USD;825.67914432678488;USD
+CELI;CELI;Autonome;HQ7ZT6SK3CAD;VRT;NYSE;XNYS;Vertiv Holdings Co (Class A);EQUITY;1;LONG;310.3579;USD;340.05;CAD;243.5180026439302;USD;310.3579;USD;66.8398973560698;USD
+CELI;CELI;Autonome;HQ7ZT6SK3CAD;XAD;TSX;XTSE;iShares U.S. Aerospace & Defense ETF - CAD;EXCHANGE_TRADED_FUND;3;LONG;105.0200;CAD;274.65;CAD;274.65;CAD;315.06;CAD;40.41;CAD
+Non-enregistré;Non-enregistré;Autonome;HQ0KXQS08CAD;LEVGQ;FINRA;FINR;Lion Electric Co (The);EQUITY;11;LONG;;;241.56;CAD;199.16404596;USD;0;USD;-199.16404596;USD
