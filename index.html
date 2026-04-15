@@ -1,684 +1,154 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Portfolio Monitor</title>
+  <title>Portfolio Data Grabber</title>
+  <style>
+    body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e1e4ea; }
+    h3 { margin: 0 0 8px; font-size: 16px; }
+    p { color: #8b8fa3; font-size: 13px; margin: 0 0 16px; }
+    .status { padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
+    .status.ok { background: rgba(0,212,161,.1); color: #00d4a1; }
+    .status.loading { background: rgba(108,92,231,.1); color: #a29bfe; }
+    .status.error { background: rgba(255,92,92,.1); color: #ff5c5c; }
+    .stats { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .stat { background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 8px; padding: 12px 16px; min-width: 120px; }
+    .stat-label { font-size: 10px; text-transform: uppercase; color: #8b8fa3; letter-spacing: .5px; }
+    .stat-val { font-size: 18px; font-weight: 700; margin-top: 2px; }
+    button {
+      background: #6c5ce7; color: #fff; border: none; border-radius: 8px;
+      padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer;
+      margin-right: 8px; margin-bottom: 8px;
+    }
+    button:hover { opacity: .85; }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+    button.secondary { background: #2a2d3a; }
+    textarea { width: 100%; height: 100px; background: #1a1d27; color: #e1e4ea; border: 1px solid #2a2d3a; border-radius: 8px; padding: 8px; font-size: 11px; font-family: monospace; margin-top: 8px; resize: vertical; }
+  </style>
   <script type="text/javascript" src="https://wealthica.github.io/wealthica.js/dist/addon.min.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --bg: #0f1117;
-      --card: #1a1d27;
-      --border: #2a2d3a;
-      --text: #e1e4ea;
-      --text-dim: #8b8fa3;
-      --green: #00d4a1;
-      --red: #ff5c5c;
-      --accent: #6c5ce7;
-      --accent2: #00b4d8;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      padding: 20px;
-      line-height: 1.5;
-    }
-
-    /* Loading & Error */
-    #loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 200px;
-      font-size: 16px;
-      color: var(--text-dim);
-    }
-    .spinner {
-      width: 24px; height: 24px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
-      margin-right: 12px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #error { color: var(--red); padding: 20px; display: none; }
-    #dashboard { display: none; }
-
-    /* Summary Cards */
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-    }
-    .card-label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      color: var(--text-dim);
-      margin-bottom: 6px;
-    }
-    .card-value {
-      font-size: 24px;
-      font-weight: 700;
-    }
-    .card-sub {
-      font-size: 13px;
-      margin-top: 4px;
-    }
-    .positive { color: var(--green); }
-    .negative { color: var(--red); }
-
-    /* Export button */
-    .export-btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-bottom: 20px;
-      transition: opacity .2s;
-    }
-    .export-btn:hover { opacity: .85; }
-    .export-btn:disabled { opacity: .4; cursor: not-allowed; }
-
-    /* Tabs */
-    .tabs {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0;
-    }
-    .tab {
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      padding: 10px 20px;
-      cursor: pointer;
-      font-size: 14px;
-      border-bottom: 2px solid transparent;
-      transition: all .2s;
-    }
-    .tab:hover { color: var(--text); }
-    .tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-    }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    /* Charts */
-    .charts-row {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .chart-container {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-    }
-    .chart-title {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-
-    /* Tables */
-    .table-container {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th {
-      text-align: left;
-      padding: 12px 16px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      color: var(--text-dim);
-      background: rgba(255,255,255,.03);
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-    }
-    th:hover { color: var(--text); }
-    th .sort-arrow { margin-left: 4px; font-size: 10px; }
-    td {
-      padding: 10px 16px;
-      font-size: 13px;
-      border-bottom: 1px solid var(--border);
-    }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255,255,255,.02); }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-
-    /* Responsive */
-    @media (max-width: 700px) {
-      .charts-row { grid-template-columns: 1fr; }
-      .summary { grid-template-columns: 1fr 1fr; }
-    }
-  </style>
 </head>
 <body>
+  <h3>Portfolio Data Grabber</h3>
+  <p>Fetches your positions and transactions from Wealthica, then exports as JSON for the standalone dashboard.</p>
 
-  <div id="loading"><div class="spinner"></div> Connecting to Wealthica...</div>
-  <div id="error"></div>
+  <div class="status loading" id="status">Connecting to Wealthica...</div>
 
-  <div id="dashboard">
-    <button class="export-btn" id="exportBtn" disabled>Export Data for Dashboard</button>
-
-    <!-- Summary Cards -->
-    <div class="summary">
-      <div class="card">
-        <div class="card-label">Market Value</div>
-        <div class="card-value" id="totalMarket">--</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Book Value</div>
-        <div class="card-value" id="totalBook">--</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Total Gain/Loss</div>
-        <div class="card-value" id="totalGain">--</div>
-        <div class="card-sub" id="totalGainPct">--</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Positions</div>
-        <div class="card-value" id="positionCount">--</div>
-      </div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab active" data-tab="overview">Overview</button>
-      <button class="tab" data-tab="positions">Holdings</button>
-      <button class="tab" data-tab="transactions">Transactions</button>
-    </div>
-
-    <!-- Tab: Overview -->
-    <div class="tab-content active" id="tab-overview">
-      <div class="charts-row">
-        <div class="chart-container">
-          <div class="chart-title">Portfolio Performance</div>
-          <canvas id="perfChart"></canvas>
-        </div>
-        <div class="chart-container">
-          <div class="chart-title">Allocation</div>
-          <canvas id="allocChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab: Holdings -->
-    <div class="tab-content" id="tab-positions">
-      <div class="table-container">
-        <table id="positionsTable">
-          <thead>
-            <tr>
-              <th data-sort="symbol">Symbol <span class="sort-arrow"></span></th>
-              <th data-sort="name">Name <span class="sort-arrow"></span></th>
-              <th data-sort="quantity" class="text-right">Qty <span class="sort-arrow"></span></th>
-              <th data-sort="market_value" class="text-right">Market Value <span class="sort-arrow"></span></th>
-              <th data-sort="book_value" class="text-right">Book Value <span class="sort-arrow"></span></th>
-              <th data-sort="gain" class="text-right">Gain/Loss <span class="sort-arrow"></span></th>
-              <th data-sort="gain_pct" class="text-right">% <span class="sort-arrow"></span></th>
-              <th data-sort="weight" class="text-right">Weight <span class="sort-arrow"></span></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Tab: Transactions -->
-    <div class="tab-content" id="tab-transactions">
-      <div class="table-container">
-        <table id="transactionsTable">
-          <thead>
-            <tr>
-              <th data-sort="date">Date <span class="sort-arrow"></span></th>
-              <th data-sort="type">Type <span class="sort-arrow"></span></th>
-              <th data-sort="symbol">Symbol <span class="sort-arrow"></span></th>
-              <th data-sort="description">Description <span class="sort-arrow"></span></th>
-              <th data-sort="quantity" class="text-right">Qty <span class="sort-arrow"></span></th>
-              <th data-sort="price" class="text-right">Price <span class="sort-arrow"></span></th>
-              <th data-sort="amount" class="text-right">Amount <span class="sort-arrow"></span></th>
-              <th data-sort="currency" class="text-center">Cur <span class="sort-arrow"></span></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat"><div class="stat-label">Positions</div><div class="stat-val" id="nPos">0</div></div>
+    <div class="stat"><div class="stat-label">Transactions</div><div class="stat-val" id="nTx">0</div></div>
+    <div class="stat"><div class="stat-label">Market Value</div><div class="stat-val" id="nMV">--</div></div>
+    <div class="stat"><div class="stat-label">Gain/Loss</div><div class="stat-val" id="nGL">--</div></div>
   </div>
 
-  <script>
-    // ── Globals ──
+  <div id="actions" style="display:none">
+    <button id="btnExport">Download JSON for Dashboard</button>
+    <button id="btnRefresh" class="secondary">Refresh Data</button>
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;color:#8b8fa3;font-size:12px">Preview raw data</summary>
+      <textarea id="preview" readonly></textarea>
+    </details>
+  </div>
+
+  <script type="text/javascript">
     var addon, addonOptions;
-    var positionsData = [];
-    var transactionsData = [];
-    var historyData = [];
-    var perfChart = null;
-    var allocChart = null;
-    var sortState = {};
+    var portfolioData = null;
 
     $(function () {
+      addon = new Addon();
 
-    // ── Formatting helpers ──
-    function fmt(n, decimals) {
-      if (n == null || isNaN(n)) return '--';
-      return n.toLocaleString('en-CA', {
-        style: 'currency', currency: 'CAD',
-        minimumFractionDigits: decimals || 2,
-        maximumFractionDigits: decimals || 2
+      addon.on('init', function (options) {
+        addonOptions = options;
+        fetchAll();
+      }).on('update', function (options) {
+        addonOptions = $.extend(addonOptions, options);
+        fetchAll();
+      }).on('reload', function () {
+        fetchAll();
       });
-    }
-    function fmtPct(n) {
-      if (n == null || isNaN(n)) return '--';
-      return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
-    }
-    function gainClass(n) {
-      return n > 0 ? 'positive' : n < 0 ? 'negative' : '';
-    }
 
-    // ── Tab switching ──
-    document.querySelectorAll('.tab').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-        document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-        btn.classList.add('active');
-        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      $('#btnRefresh').on('click', function () { fetchAll(); });
+
+      $('#btnExport').on('click', function () {
+        if (!portfolioData) return;
+        var json = JSON.stringify(portfolioData, null, 2);
+        var today = new Date().toISOString().substring(0, 10);
+        addon.downloadFile({
+          fileName: 'wealthica-export-' + today + '.json',
+          fileType: 'application/json',
+          fileContent: json
+        }).then(function () {
+          setStatus('ok', 'JSON downloaded! Open dashboard.html and load the file.');
+        }).catch(function () {
+          var blob = new Blob([json], { type: 'application/json' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'wealthica-export-' + today + '.json';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          setStatus('ok', 'JSON downloaded! Open dashboard.html and load the file.');
+        });
       });
-    });
 
-    // ── Build query from Wealthica addon options ──
-    function buildQuery(opts) {
-      return {
-        from: opts.dateRangeFilter && opts.dateRangeFilter[0],
-        to: opts.dateRangeFilter && opts.dateRangeFilter[1],
-        groups: opts.groupsFilter,
-        institutions: opts.institutionsFilter,
-        investments: opts.investmentsFilter === 'all' ? null : opts.investmentsFilter
-      };
-    }
+      function buildQuery() {
+        if (!addonOptions) return {};
+        return {
+          from: addonOptions.dateRangeFilter && addonOptions.dateRangeFilter[0],
+          to: addonOptions.dateRangeFilter && addonOptions.dateRangeFilter[1],
+          groups: addonOptions.groupsFilter,
+          institutions: addonOptions.institutionsFilter,
+          investments: addonOptions.investmentsFilter === 'all' ? null : addonOptions.investmentsFilter
+        };
+      }
 
-    // ── Load all data ──
-    function loadAllData() {
-      var query = buildQuery(addonOptions);
+      function fetchAll() {
+        setStatus('loading', 'Fetching your portfolio data...');
+        $('#btnExport').attr('disabled', true);
+        var query = buildQuery();
 
-      Promise.all([
-        addon.api.getPositions(query),
-        addon.api.getTransactions(query),
-        addon.request({ method: 'GET', endpoint: 'history', query: query })
-      ]).then(function(results) {
-        positionsData = results[0] || [];
-        transactionsData = results[1] || [];
-        historyData = results[2] || [];
+        Promise.all([
+          addon.api.getPositions(query),
+          addon.api.getTransactions(query),
+          addon.request({ method: 'GET', endpoint: 'history', query: query })
+        ]).then(function (results) {
+          portfolioData = {
+            exportDate: new Date().toISOString(),
+            positions: results[0] || [],
+            transactions: results[1] || [],
+            history: results[2] || []
+          };
 
-        renderSummary(positionsData);
-        renderPositionsTable(positionsData);
-        renderTransactionsTable(transactionsData);
-        renderPerfChart(historyData);
-        renderAllocChart(positionsData);
+          var tm = 0, tb = 0;
+          portfolioData.positions.forEach(function (p) {
+            tm += (p.market_value || 0);
+            tb += (p.book_value || 0);
+          });
+          var gl = tm - tb;
 
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-        document.getElementById('exportBtn').removeAttribute('disabled');
-      }).catch(function(err) {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error').style.display = 'block';
-        document.getElementById('error').textContent = 'Error loading data: ' + (err.message || err);
-      });
-    }
+          $('#nPos').text(portfolioData.positions.length);
+          $('#nTx').text(portfolioData.transactions.length);
+          $('#nMV').text('$' + tm.toLocaleString('en-CA', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+          var glEl = $('#nGL');
+          glEl.text((gl >= 0 ? '+$' : '-$') + Math.abs(gl).toLocaleString('en-CA', { minimumFractionDigits: 0, maximumFractionDigits: 0 }));
+          glEl.css('color', gl >= 0 ? '#00d4a1' : '#ff5c5c');
 
-    // ── Summary cards ──
-    function renderSummary(positions) {
-      var totalMarket = 0, totalBook = 0;
-      positions.forEach(function(p) {
-        totalMarket += (p.market_value || 0);
-        totalBook += (p.book_value || 0);
-      });
-      var totalGain = totalMarket - totalBook;
-      var totalGainPct = totalBook > 0 ? (totalGain / totalBook) * 100 : 0;
-
-      document.getElementById('totalMarket').textContent = fmt(totalMarket);
-      document.getElementById('totalBook').textContent = fmt(totalBook);
-
-      var gainEl = document.getElementById('totalGain');
-      gainEl.textContent = (totalGain >= 0 ? '+' : '') + fmt(totalGain);
-      gainEl.className = 'card-value ' + gainClass(totalGain);
-
-      var pctEl = document.getElementById('totalGainPct');
-      pctEl.textContent = fmtPct(totalGainPct);
-      pctEl.className = 'card-sub ' + gainClass(totalGain);
-
-      document.getElementById('positionCount').textContent = positions.length;
-    }
-
-    // ── Positions table ──
-    function renderPositionsTable(positions) {
-      var totalMarket = 0;
-      positions.forEach(function(p) { totalMarket += (p.market_value || 0); });
-
-      var tbody = document.querySelector('#positionsTable tbody');
-      tbody.innerHTML = '';
-      positions.forEach(function(p) {
-        var gain = (p.market_value || 0) - (p.book_value || 0);
-        var gainPct = p.book_value ? (gain / p.book_value) * 100 : 0;
-        var weight = totalMarket > 0 ? ((p.market_value || 0) / totalMarket) * 100 : 0;
-        var cls = gainClass(gain);
-
-        var symbol = (p.security && p.security.symbol) || p.symbol || '--';
-        var name = (p.security && p.security.name) || symbol;
-
-        var tr = document.createElement('tr');
-        tr.innerHTML =
-          '<td><strong>' + symbol + '</strong></td>' +
-          '<td>' + name + '</td>' +
-          '<td class="text-right">' + (p.quantity != null ? p.quantity.toFixed(2) : '--') + '</td>' +
-          '<td class="text-right">' + fmt(p.market_value) + '</td>' +
-          '<td class="text-right">' + fmt(p.book_value) + '</td>' +
-          '<td class="text-right ' + cls + '">' + (gain >= 0 ? '+' : '') + fmt(gain) + '</td>' +
-          '<td class="text-right ' + cls + '">' + fmtPct(gainPct) + '</td>' +
-          '<td class="text-right">' + weight.toFixed(1) + '%</td>';
-        tbody.appendChild(tr);
-      });
-    }
-
-    // ── Transactions table ──
-    function renderTransactionsTable(transactions) {
-      var tbody = document.querySelector('#transactionsTable tbody');
-      tbody.innerHTML = '';
-      transactions.forEach(function(t) {
-        var date = t.date ? t.date.substring(0, 10) : '--';
-        var type = t.type || '--';
-        var symbol = (t.security && t.security.symbol) || t.symbol || '--';
-        var desc = t.description || '--';
-        var qty = t.quantity != null ? t.quantity.toFixed(2) : '--';
-        var price = t.price != null ? fmt(t.price) : '--';
-        var amount = t.currency_amount != null ? fmt(t.currency_amount) : '--';
-        var cur = t.currency || '--';
-        var cls = '';
-        if (type === 'buy') cls = 'negative';
-        else if (type === 'sell' || type === 'dividend') cls = 'positive';
-
-        var tr = document.createElement('tr');
-        tr.innerHTML =
-          '<td>' + date + '</td>' +
-          '<td>' + type + '</td>' +
-          '<td><strong>' + symbol + '</strong></td>' +
-          '<td>' + desc + '</td>' +
-          '<td class="text-right">' + qty + '</td>' +
-          '<td class="text-right">' + price + '</td>' +
-          '<td class="text-right ' + cls + '">' + amount + '</td>' +
-          '<td class="text-center">' + cur.toUpperCase() + '</td>';
-        tbody.appendChild(tr);
-      });
-    }
-
-    // ── Performance chart ──
-    function renderPerfChart(history) {
-      var labels = [];
-      var values = [];
-
-      if (Array.isArray(history)) {
-        history.forEach(function(h) {
-          if (h.date) {
-            labels.push(h.date.substring(0, 10));
-            values.push(h.value || h.total || 0);
-          }
+          $('#preview').val(JSON.stringify(portfolioData, null, 2).substring(0, 5000) + '\n...');
+          $('#stats').show();
+          $('#actions').show();
+          $('#btnExport').removeAttr('disabled');
+          setStatus('ok', 'Ready! ' + portfolioData.positions.length + ' positions, ' + portfolioData.transactions.length + ' transactions loaded.');
+        }).catch(function (err) {
+          setStatus('error', 'Error: ' + (err.message || err));
         });
       }
 
-      var ctx = document.getElementById('perfChart').getContext('2d');
-      if (perfChart) perfChart.destroy();
-
-      perfChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Portfolio Value',
-            data: values,
-            borderColor: '#6c5ce7',
-            backgroundColor: 'rgba(108,92,231,0.1)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 0,
-            pointHitRadius: 10,
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function(ctx) { return fmt(ctx.parsed.y); }
-              }
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: '#8b8fa3', maxTicksLimit: 8, font: { size: 11 } },
-              grid: { color: 'rgba(255,255,255,0.05)' }
-            },
-            y: {
-              ticks: {
-                color: '#8b8fa3',
-                font: { size: 11 },
-                callback: function(v) { return fmt(v, 0); }
-              },
-              grid: { color: 'rgba(255,255,255,0.05)' }
-            }
-          },
-          interaction: { intersect: false, mode: 'index' }
-        }
-      });
-    }
-
-    // ── Allocation chart ──
-    function renderAllocChart(positions) {
-      var sorted = positions.slice().sort(function(a, b) {
-        return (b.market_value || 0) - (a.market_value || 0);
-      });
-
-      var topN = 10;
-      var top = sorted.slice(0, topN);
-      var otherVal = 0;
-      sorted.slice(topN).forEach(function(p) { otherVal += (p.market_value || 0); });
-
-      var labels = top.map(function(p) {
-        return (p.security && p.security.symbol) || p.symbol || 'Unknown';
-      });
-      var values = top.map(function(p) { return p.market_value || 0; });
-      if (otherVal > 0) {
-        labels.push('Other');
-        values.push(otherVal);
+      function setStatus(type, msg) {
+        $('#status').attr('class', 'status ' + type).text(msg);
       }
-
-      var colors = [
-        '#6c5ce7','#00b4d8','#00d4a1','#ffd166','#ff5c5c',
-        '#a29bfe','#74b9ff','#55efc4','#fdcb6e','#fab1a0',
-        '#636e72'
-      ];
-
-      var ctx = document.getElementById('allocChart').getContext('2d');
-      if (allocChart) allocChart.destroy();
-
-      allocChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: labels,
-          datasets: [{
-            data: values,
-            backgroundColor: colors.slice(0, labels.length),
-            borderColor: '#1a1d27',
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '60%',
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                color: '#8b8fa3',
-                font: { size: 11 },
-                padding: 12,
-                usePointStyle: true,
-                pointStyleWidth: 8
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: function(ctx) {
-                  var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
-                  var pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
-                  return ctx.label + ': ' + fmt(ctx.parsed) + ' (' + pct + '%)';
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // ── Column sorting ──
-    document.querySelectorAll('th[data-sort]').forEach(function(th) {
-      th.addEventListener('click', function() {
-        var table = th.closest('table');
-        var key = th.dataset.sort;
-        var tableId = table.id;
-
-        if (!sortState[tableId]) sortState[tableId] = { key: null, asc: true };
-        if (sortState[tableId].key === key) {
-          sortState[tableId].asc = !sortState[tableId].asc;
-        } else {
-          sortState[tableId].key = key;
-          sortState[tableId].asc = true;
-        }
-
-        var data;
-        if (tableId === 'positionsTable') {
-          data = positionsData.slice();
-          data.sort(function(a, b) {
-            var va = getSortVal(a, key, 'position');
-            var vb = getSortVal(b, key, 'position');
-            return compare(va, vb, sortState[tableId].asc);
-          });
-          renderPositionsTable(data);
-        } else if (tableId === 'transactionsTable') {
-          data = transactionsData.slice();
-          data.sort(function(a, b) {
-            var va = getSortVal(a, key, 'transaction');
-            var vb = getSortVal(b, key, 'transaction');
-            return compare(va, vb, sortState[tableId].asc);
-          });
-          renderTransactionsTable(data);
-        }
-
-        // Update arrow indicators
-        table.querySelectorAll('.sort-arrow').forEach(function(s) { s.textContent = ''; });
-        th.querySelector('.sort-arrow').textContent = sortState[tableId].asc ? ' ▲' : ' ▼';
-      });
     });
-
-    function getSortVal(item, key, type) {
-      if (type === 'position') {
-        if (key === 'symbol') return ((item.security && item.security.symbol) || item.symbol || '').toLowerCase();
-        if (key === 'name') return ((item.security && item.security.name) || '').toLowerCase();
-        if (key === 'quantity') return item.quantity || 0;
-        if (key === 'market_value') return item.market_value || 0;
-        if (key === 'book_value') return item.book_value || 0;
-        if (key === 'gain') return (item.market_value || 0) - (item.book_value || 0);
-        if (key === 'gain_pct') {
-          var g = (item.market_value || 0) - (item.book_value || 0);
-          return item.book_value ? g / item.book_value : 0;
-        }
-        if (key === 'weight') return item.market_value || 0;
-      }
-      if (type === 'transaction') {
-        if (key === 'date') return item.date || '';
-        if (key === 'type') return item.type || '';
-        if (key === 'symbol') return ((item.security && item.security.symbol) || item.symbol || '').toLowerCase();
-        if (key === 'description') return (item.description || '').toLowerCase();
-        if (key === 'quantity') return item.quantity || 0;
-        if (key === 'price') return item.price || 0;
-        if (key === 'amount') return item.currency_amount || 0;
-        if (key === 'currency') return (item.currency || '').toLowerCase();
-      }
-      return '';
-    }
-
-    function compare(a, b, asc) {
-      if (a < b) return asc ? -1 : 1;
-      if (a > b) return asc ? 1 : -1;
-      return 0;
-    }
-
-    // ── Export data ──
-    $('#exportBtn').on('click', function() {
-      var exportData = {
-        exportDate: new Date().toISOString(),
-        positions: positionsData,
-        transactions: transactionsData,
-        history: historyData
-      };
-      var json = JSON.stringify(exportData, null, 2);
-      var blob = new Blob([json], { type: 'application/json' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      var today = new Date().toISOString().substring(0, 10);
-      a.href = url;
-      a.download = 'wealthica-export-' + today + '.json';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
-
-    // ── Wealthica Addon Init ──
-    addon = new Addon();
-
-    addon.on('init', function(options) {
-      addonOptions = options;
-      loadAllData();
-    }).on('update', function(options) {
-      addonOptions = $.extend(addonOptions, options);
-      loadAllData();
-    });
-
-    }); // end $(function)
   </script>
 </body>
 </html>
