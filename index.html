@@ -110,12 +110,10 @@
         $('#btnExport').attr('disabled', true);
         var query = buildQuery();
 
-        // History needs a wide date range to get a proper time series
+        // Full history — go back to 2020 to capture everything
         var now = new Date();
-        var yearAgo = new Date(now);
-        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-        var histQuery = {
-          from: yearAgo.toISOString().substring(0, 10),
+        var fullQuery = {
+          from: '2020-01-01',
           to: now.toISOString().substring(0, 10),
           groups: query.groups,
           institutions: query.institutions
@@ -123,8 +121,8 @@
 
         Promise.all([
           addon.api.getPositions(query),
-          addon.api.getTransactions(query),
-          addon.request({ method: 'GET', endpoint: 'history', query: histQuery })
+          addon.api.getTransactions(fullQuery),
+          addon.request({ method: 'GET', endpoint: 'history', query: fullQuery })
         ]).then(function (results) {
           portfolioData = {
             exportDate: new Date().toISOString(),
