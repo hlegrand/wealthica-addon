@@ -298,6 +298,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         body = self.rfile.read(content_length)
         try:
             data = json.loads(body.decode())
+
+            # Preserve activities from CSV if not in incoming data
+            if not data.get("activities"):
+                activities = load_csv_activities()
+                if activities:
+                    data["activities"] = activities
+                    sys.stdout.write(f'  [sync] Injected {len(activities)} activities from CSV\n')
+                    sys.stdout.flush()
+
             # Save as latest export
             out = DIR / "wealthica-export-live.json"
             with open(out, "w", encoding="utf-8") as f:
@@ -392,6 +401,40 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             ts = datetime.now().strftime('%H:%M:%S')
             sys.stdout.write(f'  [{ts}] {msg}\n')
             sys.stdout.flush()
+
+
+def load_csv_activities():
+    """Load activities from Wealthsimple CSV export (full history)."""
+    import csv
+    # Find the most recent activities CSV
+    csvs = sorted(DIR.glob("activities-export-*.csv"), reverse=True)
+    if not csvs:
+        return None
+    try:
+        activities = []
+        with open(csvs[0], encoding="latin-1") as f:
+            reader = csv.DictReader(f, delimiter=";")
+            for row in reader:
+                d = row.get("date_transaction", "").strip()
+                if not d or len(d) < 10 or not d[0].isdigit():
+                    continue
+                activities.append({
+                    "d": d,
+                    "act": row.get("type_compte", ""),
+                    "t": row.get("type_activite", ""),
+                    "st": row.get("sous_type_activite", ""),
+                    "sym": row.get("symbole", ""),
+                    "nm": row.get("nom", ""),
+                    "cur": row.get("devise", ""),
+                    "qty": float(row.get("quantite", "0") or 0),
+                    "px": float(row.get("prix_unitaire", "0") or 0),
+                    "amt": float(row.get("montant_net_especes", "0") or 0),
+                })
+        return activities if activities else None
+    except Exception as e:
+        sys.stdout.write(f"  [csv] Error loading activities: {e}\n")
+        sys.stdout.flush()
+        return None
 
 
 def call_llm(api_key, base_url, system, messages):
