@@ -3,127 +3,397 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Portfolio Dashboard</title>
+  <title>WealthPilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
-    :root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;--text:#e1e4ea;--dim:#8b8fa3;--green:#00d4a1;--red:#ff5c5c;--accent:#6c5ce7;--accent2:#00b4d8;--yellow:#ffd166}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+    :root {
+      --bg: #0b0e14;
+      --surface: #131720;
+      --card: #171c28;
+      --border: #1e2535;
+      --border-hi: #2a3348;
+      --text: #d4dae8;
+      --text-hi: #f0f4ff;
+      --dim: #6b7a99;
+      --green: #34d399;
+      --green-bg: rgba(52,211,153,.08);
+      --red: #f87171;
+      --red-bg: rgba(248,113,113,.08);
+      --accent: #818cf8;
+      --accent-bg: rgba(129,140,248,.08);
+      --accent2: #38bdf8;
+      --yellow: #fbbf24;
+      --yellow-bg: rgba(251,191,36,.08);
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
 
-    /* Header */
-    .hdr{padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-    .hdr h1{font-size:18px;font-weight:700}
-    .hdr-r{display:flex;align-items:center;gap:10px}
-    .hdr-date{font-size:11px;color:var(--dim)}
-    .btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
-    .btn:hover{opacity:.85}
-    .btn-s{background:var(--border)}
-    #fileIn{display:none}
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
 
-    /* Live status */
-    .live-bar{display:flex;align-items:center;gap:8px;font-size:11px}
-    .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-    .live-dot.off{background:var(--dim);animation:none}
-    .live-dot.err{background:var(--red);animation:none}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-    .live-time{color:var(--dim)}
-    .live-label{color:var(--green);font-weight:600}
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px;
+      z-index: 9999;
+    }
 
-    /* Landing */
-    #landing{display:flex;flex-direction:column;align-items:center;justify-content:center;height:85vh;text-align:center}
-    #landing h2{font-size:26px;margin-bottom:6px}
-    #landing p{color:var(--dim);margin-bottom:20px;font-size:14px}
-    .drop{border:2px dashed var(--border);border-radius:14px;padding:50px 70px;cursor:pointer;transition:border-color .2s}
-    .drop:hover,.drop.over{border-color:var(--accent)}
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
 
-    /* Main */
-    #app{display:none}
-    .main{padding:20px 28px}
+    /* ── Header ── */
+    .hdr {
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(129,140,248,.03) 0%, transparent 100%);
+    }
+    .hdr-left { display: flex; align-items: center; gap: 14px; }
+    .hdr-logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; color: #fff;
+      box-shadow: 0 4px 16px rgba(129,140,248,.25);
+    }
+    .hdr h1 { font-size: 17px; font-weight: 600; color: var(--text-hi); letter-spacing: -.3px; }
+    .hdr-sub { font-size: 11px; color: var(--dim); margin-top: 1px; }
+    .hdr-r { display: flex; align-items: center; gap: 14px; }
+    .hdr-date { font-size: 11px; color: var(--dim); font-family: 'JetBrains Mono', monospace; }
 
-    /* Cards */
-    .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px}
-    .card-l{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin-bottom:2px}
-    .card-v{font-size:20px;font-weight:700}
-    .card-s{font-size:11px;margin-top:1px}
-    .pos{color:var(--green)}.neg{color:var(--red)}
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all .2s;
+    }
+    .btn:hover { box-shadow: 0 4px 16px rgba(129,140,248,.3); transform: translateY(-1px); }
+    .btn-ghost { background: var(--card); border: 1px solid var(--border); color: var(--dim); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--border-hi); box-shadow: none; transform: none; }
+    #fileIn { display: none; }
 
-    /* Tabs */
-    .tabs{display:flex;gap:2px;margin-bottom:16px;border-bottom:1px solid var(--border);overflow-x:auto}
-    .tab{background:none;border:none;color:var(--dim);padding:9px 16px;cursor:pointer;font-size:12px;border-bottom:2px solid transparent;white-space:nowrap}
-    .tab:hover{color:var(--text)}
-    .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
-    .tc{display:none}.tc.on{display:block}
+    /* ── Live status ── */
+    .live-bar { display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s ease-in-out infinite; }
+    .live-dot.off { background: var(--dim); box-shadow: none; animation: none; }
+    .live-dot.err { background: var(--red); box-shadow: 0 0 8px var(--red); animation: none; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+    .live-time { color: var(--dim); }
+    .live-label { color: var(--green); font-weight: 600; }
 
-    /* Chart boxes */
-    .gr{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:16px}
-    .bx{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
-    .bx-t{font-size:13px;font-weight:600;margin-bottom:10px}
-    .cw{position:relative;height:280px}
+    /* ── Landing ── */
+    #landing {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100vh; text-align: center;
+      background: radial-gradient(ellipse at 50% 30%, rgba(129,140,248,.06) 0%, transparent 60%);
+    }
+    #landing h2 {
+      font-size: 36px; font-weight: 700; color: var(--text-hi);
+      letter-spacing: -.5px; margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--text-hi) 0%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    #landing p { color: var(--dim); margin-bottom: 28px; font-size: 15px; }
+    .drop {
+      border: 2px dashed var(--border-hi); border-radius: 20px;
+      padding: 60px 80px; cursor: pointer; transition: all .3s;
+      background: var(--card);
+    }
+    .drop:hover, .drop.over {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+      box-shadow: 0 0 40px rgba(129,140,248,.1);
+    }
+    .drop p { color: var(--dim); font-size: 14px; }
 
-    /* Tables */
-    .tb{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px}
-    .tb-bar{padding:10px 14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border)}
-    .tb-bar input,.tb-bar select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:11px}
-    table{width:100%;border-collapse:collapse}
-    th{text-align:left;padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--dim);background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
-    th:hover{color:var(--text)}
-    th .a{font-size:9px;margin-left:3px}
-    td{padding:7px 12px;font-size:12px;border-bottom:1px solid var(--border)}
-    tr:last-child td{border-bottom:none}
-    tr:hover td{background:rgba(255,255,255,.02)}
-    .r{text-align:right}.c{text-align:center}
+    /* ── Main ── */
+    #app { display: none; }
+    .main { padding: 24px 32px; }
 
-    /* Signals */
-    .sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
-    .sc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
-    .sc h3{font-size:13px;margin-bottom:10px}
-    .si{padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;display:flex;justify-content:space-between}
-    .si:last-child{border-bottom:none}
-    .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
-    .bg{background:rgba(0,212,161,.15);color:var(--green)}
-    .br{background:rgba(255,92,92,.15);color:var(--red)}
-    .by{background:rgba(255,209,102,.15);color:var(--yellow)}
-    .bb{background:rgba(0,180,216,.15);color:var(--accent2)}
+    /* ── Summary Cards ── */
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      transition: all .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .card:hover::before { opacity: 1; }
+    .card:hover { border-color: var(--border-hi); }
+    .card-l {
+      font-size: 11px; text-transform: uppercase; letter-spacing: .8px;
+      color: var(--dim); margin-bottom: 6px; font-weight: 500;
+    }
+    .card-v { font-size: 22px; font-weight: 700; color: var(--text-hi); font-family: 'JetBrains Mono', monospace; letter-spacing: -.5px; }
+    .card-s { font-size: 12px; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
 
-    /* Dividend bars */
-    .db-r{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11px}
-    .db-l{width:60px;text-align:right;color:var(--dim)}
-    .db-t{flex:1;height:18px;background:var(--bg);border-radius:3px;overflow:hidden}
-    .db-f{height:100%;background:var(--green);border-radius:3px}
-    .db-v{width:70px;font-size:11px}
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 4px; margin-bottom: 20px;
+      background: var(--surface); border-radius: 12px; padding: 4px;
+      overflow-x: auto;
+    }
+    .tab {
+      background: none; border: none; color: var(--dim);
+      padding: 10px 18px; cursor: pointer; font-size: 13px;
+      border-radius: 8px; white-space: nowrap;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      transition: all .2s;
+    }
+    .tab:hover { color: var(--text); background: rgba(255,255,255,.03); }
+    .tab.on {
+      color: var(--text-hi);
+      background: var(--card);
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .tc { display: none; animation: fadeIn .3s ease; }
+    .tc.on { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Score */
-    .sm{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-    .sb{flex:1;height:10px;background:var(--bg);border-radius:5px;overflow:hidden}
-    .sf{height:100%;border-radius:5px}
-    .sl{font-size:22px;font-weight:700}
+    /* ── Chart boxes ── */
+    .gr { display: grid; grid-template-columns: 5fr 3fr; gap: 16px; margin-bottom: 18px; }
+    .bx {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .bx-t { font-size: 13px; font-weight: 600; margin-bottom: 14px; color: var(--text-hi); }
+    .cw { position: relative; height: 300px; }
 
-    @media(max-width:800px){.gr{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}.main{padding:14px}}
+    /* ── Tables ── */
+    .tb {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 18px;
+    }
+    .tb-bar {
+      padding: 12px 18px;
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.01);
+    }
+    .tb-bar input, .tb-bar select {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 7px 12px; font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      transition: border-color .2s;
+    }
+    .tb-bar input:focus, .tb-bar select:focus { border-color: var(--accent); outline: none; }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; padding: 10px 16px;
+      font-size: 10px; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--dim); background: rgba(255,255,255,.015);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; user-select: none; white-space: nowrap;
+      font-weight: 600;
+    }
+    th:hover { color: var(--text); }
+    th .a { font-size: 9px; margin-left: 3px; opacity: .7; }
+    td {
+      padding: 10px 16px; font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(129,140,248,.03); }
+    .r { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .c { text-align: center; }
+
+    /* ── Signals ── */
+    .sg { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+    .sc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .sc h3 { font-size: 14px; margin-bottom: 14px; color: var(--text-hi); font-weight: 600; }
+    .si {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .si:last-child { border-bottom: none; }
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+    }
+    .bg { background: var(--green-bg); color: var(--green); }
+    .br { background: var(--red-bg); color: var(--red); }
+    .by { background: var(--yellow-bg); color: var(--yellow); }
+    .bb { background: var(--accent-bg); color: var(--accent2); }
+
+    /* ── Dividend bars ── */
+    .db-r { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 12px; }
+    .db-l { width: 65px; text-align: right; color: var(--dim); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    .db-t { flex: 1; height: 22px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+    .db-f { height: 100%; background: linear-gradient(90deg, var(--green), var(--accent2)); border-radius: 6px; transition: width .5s ease; }
+    .db-v { width: 80px; font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Score meter ── */
+    .sm { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .sb { flex: 1; height: 12px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+    .sf { height: 100%; border-radius: 6px; transition: width .5s ease; }
+    .sl { font-size: 26px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Chat ── */
+    .chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 260px); min-height: 420px; }
+    .chat-msgs {
+      flex: 1; overflow-y: auto; padding: 16px 0;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .msg { display: flex; gap: 10px; max-width: 80%; }
+    .msg-user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg-ai { align-self: flex-start; }
+    .msg-content {
+      padding: 14px 18px; border-radius: 16px;
+      font-size: 13.5px; line-height: 1.65;
+      white-space: pre-wrap; word-wrap: break-word;
+    }
+    .msg-user .msg-content {
+      background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+      color: #fff; border-bottom-right-radius: 4px;
+    }
+    .msg-ai .msg-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-ai .msg-content strong { color: var(--accent2); }
+    .msg-ai .msg-content code {
+      background: var(--bg); padding: 2px 6px; border-radius: 4px;
+      font-size: 12px; font-family: 'JetBrains Mono', monospace;
+    }
+    .msg-typing { align-self: flex-start; }
+    .msg-typing .msg-content {
+      background: var(--surface); border: 1px solid var(--border); color: var(--dim);
+    }
+    .msg-typing .msg-content::after {
+      content: ''; display: inline-block; width: 4px; height: 14px;
+      background: var(--accent); margin-left: 4px; vertical-align: middle;
+      animation: blink .8s infinite;
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    .chat-quick { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 0; }
+    .qbtn {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--accent2); border-radius: 20px;
+      padding: 8px 16px; font-size: 12px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      transition: all .25s;
+    }
+    .qbtn:hover {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+      box-shadow: 0 4px 16px rgba(129,140,248,.2);
+      transform: translateY(-1px);
+    }
+    .chat-input {
+      display: flex; gap: 10px; padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .chat-input input {
+      flex: 1; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px 18px; color: var(--text); font-size: 14px;
+      font-family: 'DM Sans', sans-serif; outline: none;
+      transition: border-color .2s;
+    }
+    .chat-input input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(129,140,248,.1); }
+    .chat-input input::placeholder { color: var(--dim); }
+    .chat-input button {
+      background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+      color: #fff; border: none; border-radius: 12px;
+      padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all .2s;
+    }
+    .chat-input button:hover { box-shadow: 0 4px 20px rgba(129,140,248,.3); transform: translateY(-1px); }
+    .chat-input button:disabled { opacity: .35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .gr { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr 1fr; }
+      .main { padding: 16px; }
+      .hdr { padding: 14px 16px; }
+      .msg { max-width: 92%; }
+    }
   </style>
 </head>
 <body>
 
 <div id="landing">
-  <h2>Portfolio Dashboard</h2>
-  <p>Export your data from the Wealthica add-on, then load it here.</p>
-  <div class="drop" id="dropZone"><p>Drop <strong>wealthica-export-*.json</strong> here<br>or click to browse</p></div>
+  <h2>WealthPilot</h2>
+  <p>Your AI-powered portfolio command center</p>
+  <div class="drop" id="dropZone">
+    <p>Drop your <strong>wealthica-export.json</strong> here<br><span style="color:var(--dim);font-size:12px">or click to browse</span></p>
+  </div>
   <input type="file" id="fileIn" accept=".json">
 </div>
 
 <div id="app">
   <div class="hdr">
-    <h1>Portfolio Dashboard</h1>
+    <div class="hdr-left">
+      <div class="hdr-logo">W</div>
+      <div>
+        <h1>WealthPilot</h1>
+        <div class="hdr-sub" id="eDate">Portfolio Dashboard</div>
+      </div>
+    </div>
     <div class="hdr-r">
       <div class="live-bar">
         <span class="live-dot off" id="liveDot"></span>
         <span class="live-label" id="liveLabel">--</span>
         <span class="live-time" id="liveTime"></span>
       </div>
-      <span class="hdr-date" id="eDate"></span>
-      <button class="btn btn-s" id="reloadBtn">Load another file</button>
+      <button class="btn btn-ghost" id="reloadBtn">Load file</button>
     </div>
   </div>
+
   <div class="main">
     <div class="summary">
       <div class="card"><div class="card-l">Market Value</div><div class="card-v" id="sM">--</div></div>
@@ -140,9 +410,9 @@
       <button class="tab" data-t="dividends">Dividends</button>
       <button class="tab" data-t="transactions">Transactions</button>
       <button class="tab" data-t="signals">Signals</button>
+      <button class="tab" data-t="ai">AI Assistant</button>
     </div>
 
-    <!-- Overview -->
     <div class="tc on" id="t-overview">
       <div class="gr">
         <div class="bx"><div class="bx-t">Portfolio Performance</div><div class="cw"><canvas id="cPerf"></canvas></div></div>
@@ -150,10 +420,9 @@
       </div>
     </div>
 
-    <!-- Holdings -->
     <div class="tc" id="t-holdings">
       <div class="tb">
-        <div class="tb-bar"><input type="text" id="hF" placeholder="Search symbol..."></div>
+        <div class="tb-bar"><input type="text" id="hF" placeholder="Search symbol or name..."></div>
         <table id="tH"><thead><tr>
           <th data-k="sym">Symbol<span class="a"></span></th>
           <th data-k="nm">Name<span class="a"></span></th>
@@ -169,7 +438,6 @@
       </div>
     </div>
 
-    <!-- Sectors -->
     <div class="tc" id="t-sectors">
       <div class="gr">
         <div class="bx"><div class="bx-t">Sector Allocation</div><div class="cw"><canvas id="cSec"></canvas></div></div>
@@ -182,7 +450,6 @@
       </div>
     </div>
 
-    <!-- Dividends -->
     <div class="tc" id="t-dividends">
       <div class="gr">
         <div class="bx"><div class="bx-t">Monthly Dividend Income</div><div class="cw"><canvas id="cDiv"></canvas></div></div>
@@ -195,7 +462,6 @@
       </div>
     </div>
 
-    <!-- Transactions -->
     <div class="tc" id="t-transactions">
       <div class="tb">
         <div class="tb-bar">
@@ -215,14 +481,35 @@
       </div>
     </div>
 
-    <!-- Signals -->
     <div class="tc" id="t-signals"><div class="sg" id="sigGrid"></div></div>
+
+    <div class="tc" id="t-ai">
+      <div class="chat-wrap">
+        <div class="chat-msgs" id="chatMsgs">
+          <div class="msg msg-ai">
+            <div class="msg-content">Hey Henri! I'm your portfolio AI assistant. I can analyze your holdings, spot opportunities, and give you trading insights. Pick a quick action or ask me anything.</div>
+          </div>
+        </div>
+        <div class="chat-quick" id="chatQuick">
+          <button class="qbtn" data-q="Analyze my portfolio — strengths, weaknesses, and what I should change">Analyze Portfolio</button>
+          <button class="qbtn" data-q="Should I take profit on TSM? Give me a technical and fundamental view.">TSM Analysis</button>
+          <button class="qbtn" data-q="What sectors am I missing? Suggest 2-3 stocks to diversify.">Diversify</button>
+          <button class="qbtn" data-q="What's happening in the market right now? Any risks or opportunities for my portfolio?">Market Update</button>
+          <button class="qbtn" data-q="Calculate position sizing: I want to add a new stock with $500. What's the right approach?">Position Sizing</button>
+        </div>
+        <div class="chat-input">
+          <input type="text" id="chatIn" placeholder="Ask about your portfolio, a stock, market analysis...">
+          <button id="chatSend">Send</button>
+          <button id="chatClear" class="btn btn-ghost" style="padding:12px 14px;font-size:12px" title="Clear conversation">Clear</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
 var D=null,CH={},SS={};
-var COL=['#6c5ce7','#00b4d8','#00d4a1','#ffd166','#ff5c5c','#a29bfe','#74b9ff','#55efc4','#fdcb6e','#fab1a0','#636e72','#e17055','#00cec9','#d63031','#e84393','#2d3436'];
+var COL=['#818cf8','#38bdf8','#34d399','#fbbf24','#f87171','#a78bfa','#67e8f9','#6ee7b7','#fcd34d','#fca5a5','#94a3b8','#fb923c','#22d3ee','#ef4444','#e879f9','#475569'];
 
 // ── Helpers ──
 function $(id){return document.getElementById(id)}
@@ -261,13 +548,12 @@ function loadJSON(data){
   D=data;renderAll();$('landing').style.display='none';$('app').style.display='block';
 }
 
-// ── Auto-load: try fetch first, then fall back to embedded data ──
+// ── Auto-load ──
 (function(){
   var today=new Date().toISOString().substring(0,10);
   var files=['wealthica-export-'+today+'.json','wealthica-export.json'];
   function tryNext(i){
     if(i>=files.length){
-      // Fallback: load embedded data if available
       if(typeof EMBEDDED_DATA!=='undefined'&&EMBEDDED_DATA)loadJSON(EMBEDDED_DATA);
       return;
     }
@@ -286,36 +572,28 @@ $$('.tab').forEach(function(b){
   };
 });
 
-// ══════════════════════════════════════════
-//  RENDER ALL
-// ══════════════════════════════════════════
 function renderAll(){
   var pos=D.positions||[],tx=D.transactions||[],hist=D.history||[];
-  if(D.exportDate)$('eDate').textContent='Data: '+D.exportDate.substring(0,10);
+  if(D.exportDate)$('eDate').textContent='Data from '+D.exportDate.substring(0,10);
   rSummary(pos,tx);rOverview(pos,hist);rHoldings(pos);rSectors(pos);rDividends(tx);rTransactions(tx);rSignals(pos,tx);
   startLive();
 }
 
-// ══════════════════════════════════════════
-//  LIVE PRICE REFRESH
-// ══════════════════════════════════════════
+// ── LIVE PRICES ──
 var liveInterval=null;
-var CORS_PROXY='https://corsproxy.io/?url=';
+var QUOTE_URL='/quotes?symbols=';
 
 function yahooSym(p){
-  var sec=p.security||{};
-  var sym=sec.symbol||'';
+  var sec=p.security||{};var sym=sec.symbol||'';
   if(sec.currency==='cad'&&sec.geo==='Canada'&&sym.indexOf('.TO')<0)return sym+'.TO';
   return sym;
 }
-
 function startLive(){
   if(liveInterval)clearInterval(liveInterval);
-  setLiveStatus('loading','Fetching...');
+  setLiveStatus('loading','Connecting...');
   fetchLivePrices();
   liveInterval=setInterval(fetchLivePrices,30000);
 }
-
 function setLiveStatus(state,msg,time){
   var dot=$('liveDot'),lbl=$('liveLabel'),tm=$('liveTime');
   dot.className='live-dot'+(state==='ok'?'':state==='loading'?' off':' err');
@@ -323,98 +601,48 @@ function setLiveStatus(state,msg,time){
   lbl.style.color=state==='ok'?'var(--green)':state==='loading'?'var(--dim)':'var(--red)';
   if(time)tm.textContent=time;
 }
-
 function fetchLivePrices(){
   if(!D||!D.positions||!D.positions.length)return;
   setLiveStatus('loading','Updating...');
-
-  // Build symbol list
   var syms=[];
-  D.positions.forEach(function(p){
-    var ys=yahooSym(p);
-    if(ys)syms.push(ys);
-  });
-
-  // Also fetch USD/CAD
+  D.positions.forEach(function(p){var ys=yahooSym(p);if(ys)syms.push(ys)});
   syms.push('USDCAD=X');
-
-  // Fetch each symbol via Yahoo v8 chart endpoint through CORS proxy
-  var results={};
-  var done=0;
-  var total=syms.length;
-
-  syms.forEach(function(sym){
-    var url=CORS_PROXY+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1d&range=1d');
-    fetch(url).then(function(r){return r.json()}).then(function(data){
-      var meta=(data.chart&&data.chart.result&&data.chart.result[0]&&data.chart.result[0].meta)||{};
-      results[sym]={
-        price:meta.regularMarketPrice||null,
-        prevClose:meta.chartPreviousClose||meta.previousClose||null,
-        high:meta.regularMarketDayHigh||null,
-        low:meta.regularMarketDayLow||null
-      };
-    }).catch(function(){
-      results[sym]=null;
-    }).finally(function(){
-      done++;
-      if(done>=total)applyLivePrices(results);
-    });
+  fetch(QUOTE_URL+syms.join(',')).then(function(r){
+    if(!r.ok)throw new Error('Server error '+r.status);return r.json();
+  }).then(function(data){applyLivePrices(data.quotes||{})}).catch(function(err){
+    setLiveStatus('err','Offline');
   });
 }
-
 function applyLivePrices(results){
   var usdcad=(results['USDCAD=X']&&results['USDCAD=X'].price)||1.37;
   var updated=0;
-
   D.positions.forEach(function(p){
-    var ys=yahooSym(p);
-    var q=results[ys];
-    if(!q||!q.price)return;
-
-    var sec=p.security||{};
-    var qty=p.quantity||0;
-    var livePrice=q.price;
-
-    // Update security live data
+    var ys=yahooSym(p);var q=results[ys];if(!q||!q.price)return;
+    var sec=p.security||{};var qty=p.quantity||0;var livePrice=q.price;
     sec.last_price=livePrice;
-    if(q.prevClose){
-      sec.day_change=livePrice-q.prevClose;
-      sec.day_change_pct=((livePrice-q.prevClose)/q.prevClose)*100;
-    }
-
-    // Calculate market value in CAD
-    var mv;
-    if(sec.currency==='usd'){
-      mv=livePrice*qty*usdcad;
-    }else{
-      mv=livePrice*qty;
-    }
-
+    if(q.prevClose){sec.day_change=livePrice-q.prevClose;sec.day_change_pct=((livePrice-q.prevClose)/q.prevClose)*100}
+    var mv;if(sec.currency==='usd'){mv=livePrice*qty*usdcad}else{mv=livePrice*qty}
     p.market_value=Math.round(mv*100)/100;
     p.gain_amount=Math.round((p.market_value-(p.book_value||0))*100)/100;
     p.gain_percent=(p.book_value&&p.book_value>0)?Math.round((p.gain_amount/p.book_value)*10000)/10000:0;
     updated++;
   });
-
-  // Re-render everything with new prices
-  var pos=D.positions||[],tx=D.transactions||[];
-  rSummary(pos,tx);
-  rHoldings(pos,$('hF').value);
-  rSectors(pos);
-  rSignals(pos,tx);
-
+  var pos=D.positions||[],tx=D.transactions||[],hist=D.history||[];
+  rSummary(pos,tx);rOverview(pos,hist);rHoldings(pos,$('hF').value);rSectors(pos);rSignals(pos,tx);
   var now=new Date();
   var timeStr=now.toLocaleTimeString('en-CA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  setLiveStatus('ok','LIVE',timeStr+' (USD/CAD '+usdcad.toFixed(4)+')');
+  setLiveStatus('ok','LIVE '+updated+'/'+D.positions.length,timeStr+' | USD/CAD '+usdcad.toFixed(4));
 }
+
+// ── Chart theme ──
+var chartGrid='rgba(255,255,255,.04)',chartTick='#6b7a99';
 
 // ── Summary ──
 function rSummary(pos,tx){
   var tm=0,tb=0;
   pos.forEach(function(p){tm+=(p.market_value||0);tb+=(p.book_value||0)});
   var g=tm-tb,gp=tb>0?(g/tb)*100:0;
-  $('sM').textContent=fmt(tm);
-  $('sB').textContent=fmt(tb);
+  $('sM').textContent=fmt(tm);$('sB').textContent=fmt(tb);
   var ge=$('sG');ge.textContent=(g>=0?'+':'')+fmt(g);ge.className='card-v '+(g>=0?'pos':'neg');
   var pe=$('sGP');pe.textContent=fp(gp);pe.className='card-s '+(g>=0?'pos':'neg');
   $('sC').textContent=pos.length;
@@ -424,24 +652,41 @@ function rSummary(pos,tx){
 
 // ── Overview ──
 function rOverview(pos,hist){
-  // Aggregate history by date (API returns per-account entries)
-  var byDate={};
-  hist.forEach(function(h){
-    if(!h.date)return;
-    var d=h.date.substring(0,10);
-    byDate[d]=(byDate[d]||0)+(h.value||h.currency_value||h.total||0);
-  });
-  var sortedDates=Object.keys(byDate).sort();
-  var lb=sortedDates,vl=sortedDates.map(function(d){return byDate[d]});
+  var acts=(D.activities||[]).slice().sort(function(a,b){return(a.d||'').localeCompare(b.d||'')});
+  var lb=[],invested=[],dividends=[];var cumInv=0,cumDiv=0;
+  if(acts.length>1){
+    var seen={};
+    acts.forEach(function(a){
+      if(!a.d)return;
+      if(a.t==='MoneyMovement'&&a.amt>0)cumInv+=a.amt;
+      else if(a.t==='Dividend')cumDiv+=a.amt;
+      if(!seen[a.d]){seen[a.d]=true;lb.push(a.d)}
+      invested[lb.length-1]=cumInv;dividends[lb.length-1]=cumDiv;
+    });
+    var tm=0;pos.forEach(function(p){tm+=(p.market_value||0)});
+    var today=new Date().toISOString().substring(0,10);
+    if(lb[lb.length-1]!==today){lb.push(today);invested.push(invested[invested.length-1]);dividends.push(dividends[dividends.length-1])}
+  } else {
+    var byDate={};
+    hist.forEach(function(h){if(!h.date)return;var d=h.date.substring(0,10);byDate[d]=(byDate[d]||0)+(h.value||h.currency_value||h.total||0)});
+    lb=Object.keys(byDate).sort();invested=lb.map(function(d){return byDate[d]});
+  }
+  var tm2=0;pos.forEach(function(p){tm2+=(p.market_value||0)});
+  var mvLine=lb.map(function(){return tm2});
   if(CH.p)CH.p.destroy();
-  CH.p=new Chart($('cPerf'),{type:'line',data:{labels:lb,datasets:[{data:vl,borderColor:'#6c5ce7',backgroundColor:'rgba(108,92,231,.1)',fill:true,tension:.3,pointRadius:0,pointHitRadius:10,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmt(c.parsed.y)}}}},scales:{x:{ticks:{color:'#8b8fa3',maxTicksLimit:8,font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#8b8fa3',font:{size:10},callback:function(v){return fmt(v,0)}},grid:{color:'rgba(255,255,255,.05)'}}},interaction:{intersect:false,mode:'index'}}});
+  var datasets=[
+    {label:'Total Deposits',data:invested,borderColor:'#6b7a99',backgroundColor:'rgba(107,122,153,.06)',fill:true,tension:.3,pointRadius:0,pointHitRadius:10,borderWidth:2,borderDash:[5,3]},
+    {label:'Current Market Value',data:mvLine,borderColor:'#818cf8',backgroundColor:'rgba(129,140,248,.06)',fill:true,tension:0,pointRadius:0,borderWidth:2}
+  ];
+  if(dividends.length){datasets.push({label:'Cumulative Dividends',data:dividends,borderColor:'#34d399',backgroundColor:'transparent',fill:false,tension:.3,pointRadius:0,borderWidth:1.5,borderDash:[3,2]})}
+  CH.p=new Chart($('cPerf'),{type:'line',data:{labels:lb,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:chartTick,font:{size:11,family:'DM Sans'},usePointStyle:true,pointStyleWidth:8,padding:12}},tooltip:{backgroundColor:'#1e2535',borderColor:'#2a3348',borderWidth:1,titleFont:{family:'DM Sans'},bodyFont:{family:'JetBrains Mono',size:12},callbacks:{label:function(c){return c.dataset.label+': '+fmt(c.parsed.y)}}}},scales:{x:{ticks:{color:chartTick,maxTicksLimit:8,font:{size:10,family:'DM Sans'}},grid:{color:chartGrid}},y:{ticks:{color:chartTick,font:{size:10,family:'JetBrains Mono'},callback:function(v){return fmt(v,0)}},grid:{color:chartGrid}}},interaction:{intersect:false,mode:'index'}}});
 
   var s=pos.slice().sort(function(a,b){return(b.market_value||0)-(a.market_value||0)});
   var top=s.slice(0,10),ov=0;s.slice(10).forEach(function(p){ov+=(p.market_value||0)});
   var al=top.map(pSym),av=top.map(function(p){return p.market_value||0});
   if(ov>0){al.push('Other');av.push(ov)}
   if(CH.a)CH.a.destroy();
-  CH.a=new Chart($('cAlloc'),{type:'doughnut',data:{labels:al,datasets:[{data:av,backgroundColor:COL.slice(0,al.length),borderColor:'#1a1d27',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:'#8b8fa3',font:{size:9},padding:6,usePointStyle:true,pointStyleWidth:7}},tooltip:{callbacks:{label:function(c){var t=c.dataset.data.reduce(function(a,b){return a+b},0);return c.label+': '+fmt(c.parsed)+' ('+(t>0?((c.parsed/t)*100).toFixed(1):0)+'%)'}}}}}});
+  CH.a=new Chart($('cAlloc'),{type:'doughnut',data:{labels:al,datasets:[{data:av,backgroundColor:COL.slice(0,al.length),borderColor:'#171c28',borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:chartTick,font:{size:10,family:'DM Sans'},padding:8,usePointStyle:true,pointStyleWidth:7}},tooltip:{backgroundColor:'#1e2535',borderColor:'#2a3348',borderWidth:1,bodyFont:{family:'JetBrains Mono',size:12},callbacks:{label:function(c){var t=c.dataset.data.reduce(function(a,b){return a+b},0);return c.label+': '+fmt(c.parsed)+' ('+(t>0?((c.parsed/t)*100).toFixed(1):0)+'%)'}}}}}});
 }
 
 // ── Holdings ──
@@ -463,26 +708,15 @@ $('hF').oninput=function(){if(D)rHoldings(D.positions,this.value)};
 // ── Sectors ──
 function rSectors(pos){
   var sec={},tm=0;
-  pos.forEach(function(p){
-    var s=pSector(p);if(!sec[s])sec[s]={mv:0,bv:0,n:0};
-    sec[s].mv+=(p.market_value||0);sec[s].bv+=(p.book_value||0);sec[s].n++;tm+=(p.market_value||0);
-  });
+  pos.forEach(function(p){var s=pSector(p);if(!sec[s])sec[s]={mv:0,bv:0,n:0};sec[s].mv+=(p.market_value||0);sec[s].bv+=(p.book_value||0);sec[s].n++;tm+=(p.market_value||0)});
   var k=Object.keys(sec).sort(function(a,b){return sec[b].mv-sec[a].mv});
   var sv=k.map(function(s){return sec[s].mv}),sg=k.map(function(s){return sec[s].mv-sec[s].bv});
-
   if(CH.s)CH.s.destroy();
-  CH.s=new Chart($('cSec'),{type:'doughnut',data:{labels:k,datasets:[{data:sv,backgroundColor:COL.slice(0,k.length),borderColor:'#1a1d27',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:'#8b8fa3',font:{size:9},padding:6,usePointStyle:true}},tooltip:{callbacks:{label:function(c){return c.label+': '+fmt(c.parsed)+' ('+(tm>0?((c.parsed/tm)*100).toFixed(1):0)+'%)'}}}}}});
-
+  CH.s=new Chart($('cSec'),{type:'doughnut',data:{labels:k,datasets:[{data:sv,backgroundColor:COL.slice(0,k.length),borderColor:'#171c28',borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:chartTick,font:{size:10,family:'DM Sans'},padding:8,usePointStyle:true}},tooltip:{backgroundColor:'#1e2535',borderColor:'#2a3348',borderWidth:1,bodyFont:{family:'JetBrains Mono',size:12},callbacks:{label:function(c){return c.label+': '+fmt(c.parsed)+' ('+(tm>0?((c.parsed/tm)*100).toFixed(1):0)+'%)'}}}}}});
   if(CH.sg)CH.sg.destroy();
-  CH.sg=new Chart($('cSecGL'),{type:'bar',data:{labels:k,datasets:[{data:sg,backgroundColor:sg.map(function(g){return g>=0?'rgba(0,212,161,.7)':'rgba(255,92,92,.7)'}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmt(c.parsed.x)}}}},scales:{x:{ticks:{color:'#8b8fa3',font:{size:10},callback:function(v){return fmt(v,0)}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#8b8fa3',font:{size:10}},grid:{display:false}}}}});
-
+  CH.sg=new Chart($('cSecGL'),{type:'bar',data:{labels:k,datasets:[{data:sg,backgroundColor:sg.map(function(g){return g>=0?'rgba(52,211,153,.6)':'rgba(248,113,113,.6)'}),borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2535',borderColor:'#2a3348',borderWidth:1,bodyFont:{family:'JetBrains Mono',size:12},callbacks:{label:function(c){return fmt(c.parsed.x)}}}},scales:{x:{ticks:{color:chartTick,font:{size:10,family:'JetBrains Mono'},callback:function(v){return fmt(v,0)}},grid:{color:chartGrid}},y:{ticks:{color:chartTick,font:{size:10,family:'DM Sans'}},grid:{display:false}}}}});
   var tb=document.querySelector('#tS tbody');tb.innerHTML='';
-  k.forEach(function(s){
-    var d=sec[s],g=d.mv-d.bv,gp=d.bv>0?(g/d.bv)*100:0,w=tm>0?(d.mv/tm)*100:0,c=gc(g);
-    var tr=document.createElement('tr');
-    tr.innerHTML='<td><strong>'+s+'</strong></td><td class="r">'+fmt(d.mv)+'</td><td class="r">'+fmt(d.bv)+'</td><td class="r '+c+'">'+(g>=0?'+':'')+fmt(g)+'</td><td class="r '+c+'">'+fp(gp)+'</td><td class="r">'+w.toFixed(1)+'%</td><td class="r">'+d.n+'</td>';
-    tb.appendChild(tr);
-  });
+  k.forEach(function(s){var d=sec[s],g=d.mv-d.bv,gp=d.bv>0?(g/d.bv)*100:0,w=tm>0?(d.mv/tm)*100:0,c=gc(g);var tr=document.createElement('tr');tr.innerHTML='<td><strong>'+s+'</strong></td><td class="r">'+fmt(d.mv)+'</td><td class="r">'+fmt(d.bv)+'</td><td class="r '+c+'">'+(g>=0?'+':'')+fmt(g)+'</td><td class="r '+c+'">'+fp(gp)+'</td><td class="r">'+w.toFixed(1)+'%</td><td class="r">'+d.n+'</td>';tb.appendChild(tr)});
 }
 
 // ── Dividends ──
@@ -491,168 +725,139 @@ function rDividends(tx){
   var mo={};divs.forEach(function(d){var m=(d.date||'').substring(0,7);if(m)mo[m]=(mo[m]||0)+Math.abs(d.currency_amount||0)});
   var mk=Object.keys(mo).sort();
   if(CH.d)CH.d.destroy();
-  CH.d=new Chart($('cDiv'),{type:'bar',data:{labels:mk,datasets:[{data:mk.map(function(k){return mo[k]}),backgroundColor:'rgba(0,212,161,.7)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmt(c.parsed.y)}}}},scales:{x:{ticks:{color:'#8b8fa3',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#8b8fa3',font:{size:10},callback:function(v){return fmt(v,0)}},grid:{color:'rgba(255,255,255,.05)'}}}}});
-
+  CH.d=new Chart($('cDiv'),{type:'bar',data:{labels:mk,datasets:[{data:mk.map(function(k){return mo[k]}),backgroundColor:'rgba(52,211,153,.6)',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2535',borderColor:'#2a3348',borderWidth:1,bodyFont:{family:'JetBrains Mono',size:12},callbacks:{label:function(c){return fmt(c.parsed.y)}}}},scales:{x:{ticks:{color:chartTick,font:{size:10,family:'DM Sans'}},grid:{color:chartGrid}},y:{ticks:{color:chartTick,font:{size:10,family:'JetBrains Mono'},callback:function(v){return fmt(v,0)}},grid:{color:chartGrid}}}}});
   var bs={};divs.forEach(function(d){var s=tSym(d);bs[s]=(bs[s]||0)+Math.abs(d.currency_amount||0)});
   var sk=Object.keys(bs).sort(function(a,b){return bs[b]-bs[a]}),mx=sk.length>0?bs[sk[0]]:1;
   var ct=$('divStk');ct.innerHTML='';
   sk.forEach(function(k){ct.innerHTML+='<div class="db-r"><span class="db-l">'+k+'</span><div class="db-t"><div class="db-f" style="width:'+(bs[k]/mx*100)+'%"></div></div><span class="db-v pos">'+fmt(bs[k])+'</span></div>'});
-
   var tb=document.querySelector('#tD tbody');tb.innerHTML='';
   divs.sort(function(a,b){return(b.date||'').localeCompare(a.date||'')});
-  divs.forEach(function(d){
-    var tr=document.createElement('tr');
-    tr.innerHTML='<td>'+(d.date||'').substring(0,10)+'</td><td><strong>'+tSym(d)+'</strong></td><td>'+(d.description||'--')+'</td><td class="r pos">'+fmt(Math.abs(d.currency_amount||0))+'</td><td class="c">'+((d.currency||'--').toUpperCase())+'</td>';
-    tb.appendChild(tr);
-  });
+  divs.forEach(function(d){var tr=document.createElement('tr');tr.innerHTML='<td>'+(d.date||'').substring(0,10)+'</td><td><strong>'+tSym(d)+'</strong></td><td>'+(d.description||'--')+'</td><td class="r pos">'+fmt(Math.abs(d.currency_amount||0))+'</td><td class="c">'+((d.currency||'--').toUpperCase())+'</td>';tb.appendChild(tr)});
 }
 
 // ── Transactions ──
 function rTransactions(tx,sf,tf){
   var s=(sf||'').toLowerCase(),t=tf||'';
   var tb=document.querySelector('#tTx tbody');tb.innerHTML='';
-  tx.forEach(function(x){
-    var sym=tSym(x);
-    if(s&&sym.toLowerCase().indexOf(s)<0)return;
-    if(t&&x.type!==t)return;
-    var c='';if(x.type==='buy')c='neg';else if(x.type==='sell'||x.type==='dividend')c='pos';
-    var tr=document.createElement('tr');
-    tr.innerHTML='<td>'+(x.date||'').substring(0,10)+'</td><td>'+(x.type||'--')+'</td><td><strong>'+sym+'</strong></td><td>'+(x.description||'--')+'</td><td class="r">'+(x.quantity!=null?x.quantity.toFixed(2):'--')+'</td><td class="r">'+(x.price!=null?fmt(x.price):'--')+'</td><td class="r '+c+'">'+(x.currency_amount!=null?fmt(x.currency_amount):'--')+'</td><td class="c">'+((x.currency||'--').toUpperCase())+'</td>';
-    tb.appendChild(tr);
-  });
+  tx.forEach(function(x){var sym=tSym(x);if(s&&sym.toLowerCase().indexOf(s)<0)return;if(t&&x.type!==t)return;var c='';if(x.type==='buy')c='neg';else if(x.type==='sell'||x.type==='dividend')c='pos';var tr=document.createElement('tr');tr.innerHTML='<td>'+(x.date||'').substring(0,10)+'</td><td>'+(x.type||'--')+'</td><td><strong>'+sym+'</strong></td><td>'+(x.description||'--')+'</td><td class="r">'+(x.quantity!=null?x.quantity.toFixed(2):'--')+'</td><td class="r">'+(x.price!=null?fmt(x.price):'--')+'</td><td class="r '+c+'">'+(x.currency_amount!=null?fmt(x.currency_amount):'--')+'</td><td class="c">'+((x.currency||'--').toUpperCase())+'</td>';tb.appendChild(tr)});
 }
 $('txF').oninput=function(){if(D)rTransactions(D.transactions,this.value,$('txT').value)};
 $('txT').onchange=function(){if(D)rTransactions(D.transactions,$('txF').value,this.value)};
 
 // ── Signals ──
 function rSignals(pos,tx){
-  var g=$('sigGrid');g.innerHTML='';
-  var tm=0,tb=0;
+  var g=$('sigGrid');g.innerHTML='';var tm=0,tb=0;
   pos.forEach(function(p){tm+=(p.market_value||0);tb+=(p.book_value||0)});
-
-  // Diversification (HHI)
-  var ws=pos.map(function(p){return tm>0?(p.market_value||0)/tm:0}),hhi=0;
-  ws.forEach(function(w){hhi+=w*w});
+  var ws=pos.map(function(p){return tm>0?(p.market_value||0)/tm:0}),hhi=0;ws.forEach(function(w){hhi+=w*w});
   var ds=Math.max(0,Math.min(100,Math.round((1-hhi)*100)));
   var dc=ds>=70?'var(--green)':ds>=40?'var(--yellow)':'var(--red)';
-  var h='<div class="sc"><h3>Diversification Score</h3><div class="sm"><div class="sb"><div class="sf" style="width:'+ds+'%;background:'+dc+'"></div></div><span class="sl" style="color:'+dc+'">'+ds+'</span></div><p style="font-size:11px;color:var(--dim)">'+(ds>=70?'Well diversified.':ds>=40?'Moderate concentration.':'High concentration risk.')+'</p></div>';
-
-  // Concentration warnings
-  var warns=[];
-  pos.forEach(function(p){var w=tm>0?((p.market_value||0)/tm)*100:0;if(w>15)warns.push({s:pSym(p),w:w,l:w>25?'High':'Medium'})});
+  var h='<div class="sc"><h3>Diversification Score</h3><div class="sm"><div class="sb"><div class="sf" style="width:'+ds+'%;background:'+dc+'"></div></div><span class="sl" style="color:'+dc+'">'+ds+'</span></div><p style="font-size:12px;color:var(--dim)">'+(ds>=70?'Well diversified.':ds>=40?'Moderate concentration.':'High concentration risk.')+'</p></div>';
+  var warns=[];pos.forEach(function(p){var w=tm>0?((p.market_value||0)/tm)*100:0;if(w>15)warns.push({s:pSym(p),w:w,l:w>25?'High':'Medium'})});
   var secs={};pos.forEach(function(p){var s=pSector(p);secs[s]=(secs[s]||0)+(p.market_value||0)});
   Object.keys(secs).forEach(function(s){var sw=tm>0?(secs[s]/tm)*100:0;if(sw>40)warns.push({s:'Sector: '+s,w:sw,l:'Sector'})});
   warns.sort(function(a,b){return b.w-a.w});
   var wh='<div class="sc"><h3>Concentration Warnings</h3>';
   if(!warns.length)wh+='<p style="color:var(--green);font-size:12px">No concentration issues.</p>';
-  else warns.forEach(function(w){wh+='<div class="si"><span>'+w.s+'</span><span class="badge '+(w.l==='High'?'br':'by')+'">'+w.w.toFixed(1)+'% '+w.l+'</span></div>'});
-  wh+='</div>';
-
-  // Top gainers
-  var sorted=pos.map(function(p){var gl=(p.market_value||0)-(p.book_value||0);return{s:pSym(p),g:gl,gp:p.book_value?(gl/p.book_value)*100:0}});
-  sorted.sort(function(a,b){return b.gp-a.gp});
-  var gh='<div class="sc"><h3>Top Gainers</h3>';
-  sorted.slice(0,5).forEach(function(x){gh+='<div class="si"><span><strong>'+x.s+'</strong></span><span class="badge bg">'+fp(x.gp)+'</span></div>'});
-  gh+='</div>';
-
-  // Losers
-  var losers=sorted.slice().reverse();
-  var lh='<div class="sc"><h3>Review Candidates (Losses)</h3>';
-  var n=0;losers.forEach(function(x){if(x.gp<0&&n<5){lh+='<div class="si"><span><strong>'+x.s+'</strong></span><span class="badge br">'+fp(x.gp)+'</span></div>';n++}});
-  if(!n)lh+='<p style="color:var(--green);font-size:12px">No losing positions!</p>';
-  lh+='</div>';
-
-  // Sector advice
-  var secK=Object.keys(secs).filter(function(s){return s!=='Other'});
-  var ideal=100/Math.max(secK.length,1);
-  var ah='<div class="sc"><h3>Sector Weight Analysis</h3>';
-  secK.sort(function(a,b){return secs[b]-secs[a]});
-  secK.forEach(function(s){
-    var sw=tm>0?(secs[s]/tm)*100:0,diff=sw-ideal;
-    var badge,label;
-    if(diff>12){badge='br';label='Overweight +'+diff.toFixed(0)+'%'}
-    else if(diff<-12){badge='bb';label='Underweight '+diff.toFixed(0)+'%'}
-    else{badge='bg';label='Balanced'}
-    ah+='<div class="si"><span>'+s+' ('+sw.toFixed(1)+'%)</span><span class="badge '+badge+'">'+label+'</span></div>';
-  });
-  ah+='</div>';
-
-  // Income
-  var dv=0;tx.forEach(function(t){if(t.type==='dividend')dv+=Math.abs(t.currency_amount||0)});
-  var dy=tb>0?(dv/tb)*100:0;
-  var ih='<div class="sc"><h3>Income Summary</h3>';
-  ih+='<div class="si"><span>Dividends (period)</span><span class="badge bg">'+fmt(dv)+'</span></div>';
-  ih+='<div class="si"><span>Yield on cost</span><span class="badge bg">'+dy.toFixed(2)+'%</span></div>';
-  ih+='<div class="si"><span>Total return</span><span class="badge '+(tm-tb>=0?'bg':'br')+'">'+fp(tb>0?((tm-tb)/tb)*100:0)+'</span></div>';
-  ih+='</div>';
-
-  // Price signals from security data
-  var ph='<div class="sc"><h3>Price Signals (from Wealthica)</h3>';
-  var signals=[];
-  pos.forEach(function(p){
-    if(!p.security)return;
-    var s=p.security,sym=s.symbol||'?';
-    var last=s.last_price,high=s.high_price,low=s.low_price;
-    if(last&&high&&high>0){
-      var fromHigh=((last-high)/high)*100;
-      if(fromHigh<-20)signals.push({s:sym,msg:fromHigh.toFixed(0)+'% from high',badge:'br'});
-    }
-    if(last&&low&&low>0){
-      var fromLow=((last-low)/low)*100;
-      if(fromLow>50)signals.push({s:sym,msg:'+'+fromLow.toFixed(0)+'% from low',badge:'bg'});
-    }
-  });
+  else warns.forEach(function(w){wh+='<div class="si"><span>'+w.s+'</span><span class="badge '+(w.l==='High'?'br':'by')+'">'+w.w.toFixed(1)+'% '+w.l+'</span></div>'});wh+='</div>';
+  var sorted=pos.map(function(p){var gl=(p.market_value||0)-(p.book_value||0);return{s:pSym(p),g:gl,gp:p.book_value?(gl/p.book_value)*100:0}});sorted.sort(function(a,b){return b.gp-a.gp});
+  var gh='<div class="sc"><h3>Top Gainers</h3>';sorted.slice(0,5).forEach(function(x){gh+='<div class="si"><span><strong>'+x.s+'</strong></span><span class="badge bg">'+fp(x.gp)+'</span></div>'});gh+='</div>';
+  var losers=sorted.slice().reverse();var lh='<div class="sc"><h3>Review Candidates</h3>';var n=0;losers.forEach(function(x){if(x.gp<0&&n<5){lh+='<div class="si"><span><strong>'+x.s+'</strong></span><span class="badge br">'+fp(x.gp)+'</span></div>';n++}});if(!n)lh+='<p style="color:var(--green);font-size:12px">No losing positions!</p>';lh+='</div>';
+  var secK=Object.keys(secs).filter(function(s){return s!=='Other'});var ideal=100/Math.max(secK.length,1);
+  var ah='<div class="sc"><h3>Sector Weight Analysis</h3>';secK.sort(function(a,b){return secs[b]-secs[a]});
+  secK.forEach(function(s){var sw=tm>0?(secs[s]/tm)*100:0,diff=sw-ideal;var badge,label;if(diff>12){badge='br';label='Overweight +'+diff.toFixed(0)+'%'}else if(diff<-12){badge='bb';label='Underweight '+diff.toFixed(0)+'%'}else{badge='bg';label='Balanced'}ah+='<div class="si"><span>'+s+' ('+sw.toFixed(1)+'%)</span><span class="badge '+badge+'">'+label+'</span></div>'});ah+='</div>';
+  var dv=0;tx.forEach(function(t){if(t.type==='dividend')dv+=Math.abs(t.currency_amount||0)});var dy=tb>0?(dv/tb)*100:0;
+  var ih='<div class="sc"><h3>Income Summary</h3>';ih+='<div class="si"><span>Dividends (period)</span><span class="badge bg">'+fmt(dv)+'</span></div>';ih+='<div class="si"><span>Yield on cost</span><span class="badge bg">'+dy.toFixed(2)+'%</span></div>';ih+='<div class="si"><span>Total return</span><span class="badge '+(tm-tb>=0?'bg':'br')+'">'+fp(tb>0?((tm-tb)/tb)*100:0)+'</span></div>';ih+='</div>';
+  var ph='<div class="sc"><h3>Price Signals</h3>';var signals=[];
+  pos.forEach(function(p){if(!p.security)return;var s=p.security,sym=s.symbol||'?';var last=s.last_price,high=s.high_price,low=s.low_price;if(last&&high&&high>0){var fromHigh=((last-high)/high)*100;if(fromHigh<-20)signals.push({s:sym,msg:fromHigh.toFixed(0)+'% from high',badge:'br'})}if(last&&low&&low>0){var fromLow=((last-low)/low)*100;if(fromLow>50)signals.push({s:sym,msg:'+'+fromLow.toFixed(0)+'% from low',badge:'bg'})}});
   if(!signals.length)ph+='<p style="font-size:12px;color:var(--dim)">No extreme price signals.</p>';
-  else signals.slice(0,8).forEach(function(x){ph+='<div class="si"><span><strong>'+x.s+'</strong></span><span class="badge '+x.badge+'">'+x.msg+'</span></div>'});
-  ph+='</div>';
-
+  else signals.slice(0,8).forEach(function(x){ph+='<div class="si"><span><strong>'+x.s+'</strong></span><span class="badge '+x.badge+'">'+x.msg+'</span></div>'});ph+='</div>';
   g.innerHTML=h+wh+gh+lh+ah+ih+ph;
 }
 
 // ── Table sorting ──
 $$('th[data-k]').forEach(function(th){
-  th.onclick=function(){
-    var tbl=th.closest('table'),col=th.dataset.k,id=tbl.id;
-    if(!SS[id])SS[id]={k:null,a:true};
-    if(SS[id].k===col)SS[id].a=!SS[id].a;else{SS[id].k=col;SS[id].a=true}
-    if(!D)return;
-    if(id==='tH'){D.positions.sort(function(a,b){return cmpH(a,b,col,SS[id].a)});rHoldings(D.positions,$('hF').value)}
-    else if(id==='tTx'){D.transactions.sort(function(a,b){return cmpT(a,b,col,SS[id].a)});rTransactions(D.transactions,$('txF').value,$('txT').value)}
-    tbl.querySelectorAll('.a').forEach(function(s){s.textContent=''});
-    th.querySelector('.a').textContent=SS[id].a?' ▲':' ▼';
-  };
+  th.onclick=function(){var tbl=th.closest('table'),col=th.dataset.k,id=tbl.id;if(!SS[id])SS[id]={k:null,a:true};if(SS[id].k===col)SS[id].a=!SS[id].a;else{SS[id].k=col;SS[id].a=true}if(!D)return;if(id==='tH'){D.positions.sort(function(a,b){return cmpH(a,b,col,SS[id].a)});rHoldings(D.positions,$('hF').value)}else if(id==='tTx'){D.transactions.sort(function(a,b){return cmpT(a,b,col,SS[id].a)});rTransactions(D.transactions,$('txF').value,$('txT').value)}tbl.querySelectorAll('.a').forEach(function(s){s.textContent=''});th.querySelector('.a').textContent=SS[id].a?' ▲':' ▼'};
 });
-
-function cmpH(a,b,k,asc){
-  var va,vb;
-  if(k==='sym'){va=pSym(a).toLowerCase();vb=pSym(b).toLowerCase()}
-  else if(k==='nm'){va=pName(a).toLowerCase();vb=pName(b).toLowerCase()}
-  else if(k==='qty'){va=a.quantity||0;vb=b.quantity||0}
-  else if(k==='mv'){va=a.market_value||0;vb=b.market_value||0}
-  else if(k==='bv'){va=a.book_value||0;vb=b.book_value||0}
-  else if(k==='gl'){va=(a.market_value||0)-(a.book_value||0);vb=(b.market_value||0)-(b.book_value||0)}
-  else if(k==='gp'){var ga=(a.market_value||0)-(a.book_value||0);va=a.book_value?ga/a.book_value:0;var gb=(b.market_value||0)-(b.book_value||0);vb=b.book_value?gb/b.book_value:0}
-  else if(k==='w'){va=a.market_value||0;vb=b.market_value||0}
-  else if(k==='sec'){va=pSector(a);vb=pSector(b)}
-  else if(k==='ind'){va=pIndustry(a);vb=pIndustry(b)}
-  else{va=0;vb=0}
-  return va<vb?(asc?-1:1):va>vb?(asc?1:-1):0;
-}
-
-function cmpT(a,b,k,asc){
-  var va,vb;
-  if(k==='dt'){va=a.date||'';vb=b.date||''}
-  else if(k==='tp'){va=a.type||'';vb=b.type||''}
-  else if(k==='sym'){va=tSym(a).toLowerCase();vb=tSym(b).toLowerCase()}
-  else if(k==='ds'){va=(a.description||'').toLowerCase();vb=(b.description||'').toLowerCase()}
-  else if(k==='qty'){va=a.quantity||0;vb=b.quantity||0}
-  else if(k==='pr'){va=a.price||0;vb=b.price||0}
-  else if(k==='am'){va=a.currency_amount||0;vb=b.currency_amount||0}
-  else if(k==='cu'){va=(a.currency||'');vb=(b.currency||'')}
-  else{va=0;vb=0}
-  return va<vb?(asc?-1:1):va>vb?(asc?1:-1):0;
-}
+function cmpH(a,b,k,asc){var va,vb;if(k==='sym'){va=pSym(a).toLowerCase();vb=pSym(b).toLowerCase()}else if(k==='nm'){va=pName(a).toLowerCase();vb=pName(b).toLowerCase()}else if(k==='qty'){va=a.quantity||0;vb=b.quantity||0}else if(k==='mv'){va=a.market_value||0;vb=b.market_value||0}else if(k==='bv'){va=a.book_value||0;vb=b.book_value||0}else if(k==='gl'){va=(a.market_value||0)-(a.book_value||0);vb=(b.market_value||0)-(b.book_value||0)}else if(k==='gp'){var ga=(a.market_value||0)-(a.book_value||0);va=a.book_value?ga/a.book_value:0;var gb=(b.market_value||0)-(b.book_value||0);vb=b.book_value?gb/b.book_value:0}else if(k==='w'){va=a.market_value||0;vb=b.market_value||0}else if(k==='sec'){va=pSector(a);vb=pSector(b)}else if(k==='ind'){va=pIndustry(a);vb=pIndustry(b)}else{va=0;vb=0}return va<vb?(asc?-1:1):va>vb?(asc?1:-1):0}
+function cmpT(a,b,k,asc){var va,vb;if(k==='dt'){va=a.date||'';vb=b.date||''}else if(k==='tp'){va=a.type||'';vb=b.type||''}else if(k==='sym'){va=tSym(a).toLowerCase();vb=tSym(b).toLowerCase()}else if(k==='ds'){va=(a.description||'').toLowerCase();vb=(b.description||'').toLowerCase()}else if(k==='qty'){va=a.quantity||0;vb=b.quantity||0}else if(k==='pr'){va=a.price||0;vb=b.price||0}else if(k==='am'){va=a.currency_amount||0;vb=b.currency_amount||0}else if(k==='cu'){va=(a.currency||'');vb=(b.currency||'')}else{va=0;vb=0}return va<vb?(asc?-1:1):va>vb?(asc?1:-1):0}
 </script>
-<script>var EMBEDDED_DATA={"exportDate":"2026-04-15T15:57:11.912Z","positions":[{"_id":"69df99f42ed2fd2147aa0a19","security":{"_id":"67649cc71e8a2c958bb84266","currency":"usd","symbol":"LEVGQ","type":"equity","aliases":["THE LION ELECTRIC COMPANY","LION ELEC CO COM","LION ELECTRIC COMPANY","LION ELEC CO","LION ELECTRIC COMPANY (THE)","COMPAGNIE ELECTRIQUE LION","Lion Electric Co (The)","LION ELECTRIC COMPANY *","COMPAGNIE ELECTRIQUE LIO*"],"name":"THE LION ELECTRIC COMPANY","geo":"United States","high_date":"2025-06-08T15:59:49.211Z","high_price":0.25549999999999995,"last_date":"2026-04-15T16:04:44.700774Z","last_price":0.024,"low_date":"2025-12-03T01:24:56.541Z","low_price":0.00019825019963636364,"exchange":"US OTC","industry":"Automobiles","sector":"Information Technology","id":"67649cc71e8a2c958bb84266","day_high":0.004,"day_low":0.003,"volume":38993},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"non-registered-xmhr2zc_:cash:cad","quantity":11,"book_value":241.56,"market_value":0,"security_book_value":175.5906089652,"security_market_value":0,"currency":"cad","gain_percent":-1,"gain_currency_amount":-241.56,"gain_amount":-241.56}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":241.56,"market_value":0.36,"quantity":11,"gain_percent":-0.9985,"gain_amount":-241.2,"currency":"cad","id":"69df99f42ed2fd2147aa0a19"},{"_id":"69df99f32ed2fd2147aa090a","security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","aliases":["INVSTMT MNGR SR TR II ETF","Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF"],"cusip":"46152A569","name":"INVSTMT MNGR SR TR II ETF","geo":"United States","high_date":"2026-04-15T14:00:19.766Z","high_price":42.710564265600006,"last_date":"2026-04-15T16:04:44.700834Z","last_price":41.63,"low_date":"2026-04-02T15:10:16.795Z","low_price":29.019899999999996,"id":"69ce86d8f6bdbcaa49d6981d","day_high":44.805,"day_low":41.071,"volume":177595},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":13,"book_value":591.27,"market_value":763.84,"security_book_value":429.79574169089994,"security_market_value":554.84,"currency":"cad","gain_percent":0.2919,"gain_currency_amount":172.57000000000005,"gain_amount":172.57000000000005}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":591.27,"market_value":743.6,"quantity":13,"gain_percent":0.2576,"gain_amount":152.33,"currency":"cad","id":"69df99f32ed2fd2147aa090a"},{"_id":"69df99f32ed2fd2147aa090b","user":"69df990fcd159040851807c4","security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","aliases":["Global X Defence Tech Index ETF - Class A","GLOBAL X DEFENCE TECH INDEX ETF UNITS CLASS A","GLOBAL X DEFENCE TECH INDEX ETF","GLOBAL X INVESTMENTS CANADA INC. DEFENCE TECH INDEX ETF","GLB X DEF TECH INDX ETF-A","GLOBAL X DEFENSE TACH INDEX ETF UNIT CL A","GLOBAL X DEFENSE TECH INDEX ETF UNIT CL A","GLOBAL X DEF TECH IDX ETF CL A","GLOBAL X FUNDS GLOBAL X DEFENSE TECH ETF","GLOBAL X DEFENCE TECH ETF"],"name":"Global X Defence Tech Index ETF - Class A","geo":"Canada","high_date":"2025-12-02T17:57:43.010Z","high_price":86.03140625,"last_date":"2026-04-15T16:04:44.700850Z","last_price":29.35,"low_date":"2025-05-14T04:03:15.669Z","low_price":20.94,"id":"682415fe38356aefc56863f3","day_high":29.51,"day_low":29.35,"volume":7217},"__v":0,"categories":[{"category":"Canadian Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":28,"book_value":733.41,"market_value":823.76,"currency":"cad","gain_percent":0.1232,"gain_currency_amount":90.35000000000002,"gain_amount":90.35000000000002}],"override_investments":[],"class":"equity","category":"Canadian Stocks","geo":null,"book_value":733.41,"market_value":821.8,"quantity":28,"gain_percent":0.1205,"gain_amount":88.39,"currency":"cad","id":"69df99f32ed2fd2147aa090b"},{"_id":"69df99f32ed2fd2147aa090e","security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","last_price":377.075,"high_date":"2026-02-24T02:17:25.810Z","high_price":506.34461538461534,"low_date":"2025-11-10T01:15:37.893Z","low_price":93.57,"last_date":"2026-04-15T16:04:44.700862Z","aliases":["TAIWAN SEMICONDUCTOR MANUFAC","TAIWAN SEMICON MAN SP/ADR","TAIWAN SEMICONDUCTOR MFG CO LTD-SPONSORED ADR REPSTG 5 COM","TAIWAN SEMICONDUCTOR-SP ADR","Taiwan Semiconductor Manufacturing Company Ltd.","TAIWAN SEMICONDUCTOR MFG CO SP","Taiwan Semiconductor Manufacturing Co Ltd","Taiwan Semiconductor Manufacturing ADR Representing Five","TAIWAN SEMICONDUCTOR MANUFACTURING SPON ADS EACH REP 5 ORD TWD10","CALL TSM:US 17JAN2020 45","TAIWAN SEMICON MFG CO S/ADR","Taiwan Semiconductor Manufactur","TAIWAN SEMICONDUCTR F SPONSORED ADR 1 ADR REPS 5 ORD SHS","TAIWAN SEMI","Taiwan Semiconductor Manufacturing Compa","TAIWAN SEMICONDUCTOR MFG CO LTD ADR","Taiwan Semiconductor Manufacturing","TAIWAN SEMICON MFG CO","TSM TAIWAN SEMICONDUCTOR MFG CO SP","TAIWAN SEMICONDUCTOR MFG CO ADS","TAIWAN SEMICONDUCTOR MANUSPONSORED ADR","Taiwan Semiconductor MFG.","Taiwan Semiconductor Manufacturing - ADR","TAIWAN SEMICON MFG CO LTD","TAIWAN SEMICONDUCTOR MFG CO LTD-SPONSORED ADR REPSTG 5 COM TAIWAN SEMICONDUCTOR MFG CO LTD-SPONSORED ADR REPSTG 5 COM"],"geo":"United States","exchange":"New York Stock Exchange","industry":"Electronic Equipment, Instruments & Components","sector":"Information Technology","id":"574b782a109d820e001ae529","day_high":381.97,"day_low":376.51,"volume":6521872},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":7,"book_value":2556.88,"market_value":3660.96,"security_book_value":1858.6028988696,"security_market_value":2659.23,"currency":"cad","gain_percent":0.4318,"gain_currency_amount":1104.08,"gain_amount":1104.08}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":2556.88,"market_value":3626.71,"quantity":7,"gain_percent":0.4184,"gain_amount":1069.83,"currency":"cad","id":"69df99f32ed2fd2147aa090e"},{"_id":"69df99f32ed2fd2147aa0910","user":"69df990fcd159040851807c4","security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","aliases":["VERTIV HOLDINGS CO","VERTIV HOLDINGS LLC CL-A","Vertiv Holdings LLC","VERTIV HLDGS LLC A","VERTIV HOLDINGS LLC CLASS A COMMON STOCK","VERTIV HOLDINGS CO-A","Vertiv Holdings Co (Class A)","VERTIV HOLDINGS LLC","Vertiv Holdings Co","Vertiv Holdings","Vertiv Holdings Co - Ordinary Shares - Class A","VERTIV HLD A ORD","Vertiv Holdings Co. Class A","VERTIV HOLDINGS LLC CLASS A (as at October 31, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 17, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 18, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 19, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 20, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 21, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 28, 2025)"],"name":"VERTIV HOLDINGS CO","last_date":"2026-04-15T16:04:44.700874Z","last_price":302.57,"high_date":"2026-04-14T20:12:09.016Z","high_price":427.9606,"low_date":"2025-05-13T19:15:56.257Z","low_price":51.128732698899995,"geo":"United States","exchange":"New York Stock Exchange","industry":"Electronic Equipment, Instruments & Components","sector":"Information Technology","id":"5e954087fdf3e1c3ab77d6d5","day_high":310.99,"day_low":302.275,"volume":2323093},"__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":1,"book_value":340.05,"market_value":427.47,"security_book_value":247.1832529335,"security_market_value":310.51,"currency":"cad","gain_percent":0.2571,"gain_currency_amount":87.42000000000002,"gain_amount":87.42000000000002}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":340.05,"market_value":415.73,"quantity":1,"gain_percent":0.2226,"gain_amount":75.68,"currency":"cad","id":"69df99f32ed2fd2147aa0910"},{"_id":"69df99f32ed2fd2147aa0911","security":{"_id":"651226b7d99c4be5fbb2846a","currency":"cad","symbol":"XAD","type":"equity","aliases":["ISHARES US AERO&DEF ETF","iShares U.S. Aerospace & Defense ETF - CAD","ISHARES US AEROSPACE & DEFENSE INDE CAD UNIT","ISHARES U S AEROSPACE & DEFENSE INDEX ETF CAD UNIT","ISHARES U.S AEROSPACE & DEFENSE INDX ETF","ISHARES U S AEROSPACE & DEFENS","BLACKROCK ASSET MANAGEMENT CA LTD ISHARES U.S. AEROSPACE & DEFENSE INDEX E","ISHARE US AERO & DEFENSE ETF","iShares US Aerospace & Defense Index ETF"],"name":"ISHARES US AERO&DEF ETF","high_date":"2026-03-02T00:00:00.000Z","high_price":110.67,"last_date":"2026-04-15T16:04:44.700884Z","last_price":104.04,"low_date":"2025-04-22T00:00:00.000Z","low_price":65.39,"geo":"Canada","id":"651226b7d99c4be5fbb2846a","day_high":105.96,"day_low":104.04,"volume":1704},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"Canadian Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":3,"book_value":274.65,"market_value":315.06,"currency":"cad","gain_percent":0.1471,"gain_currency_amount":40.410000000000025,"gain_amount":40.410000000000025}],"override_investments":[],"class":"equity","category":"Canadian Stocks","geo":null,"book_value":274.65,"market_value":312.12,"quantity":3,"gain_percent":0.1364,"gain_amount":37.47,"currency":"cad","id":"69df99f32ed2fd2147aa0911"}],"transactions":[{"_id":"69df9a02a060da04ab4d9c34","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-05T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-zBecDkZigkRIapF84k1jybJegM","currency_amount":0.69,"description":"iShares U.S. Aerospace & Defense ETF CAD: 30-DEC-2025 (record date) 3.0000 shares, gross 0.69 CAD","settlement_date":"2026-01-05T00:00:00.000Z","processing_date":"2026-01-05T00:00:00.000Z","symbol":"XAD","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"651226b7d99c4be5fbb2846a","currency":"cad","symbol":"XAD","type":"equity","name":"ISHARES US AERO&DEF ETF","id":"651226b7d99c4be5fbb2846a"},"__v":0,"id":"69df9a02a060da04ab4d9c34"},{"_id":"69df9a02a060da04ab4d9c3d","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-08T00:00:00.000Z","type":"tax","origin_type":"Non Resident Withholding Tax","origin_id":"transaction-7a_GyvSBHAZhD0zOI1Nc5eno7EM","currency_amount":-1.63,"description":"Taiwan Semicontucter MFG ADR: Non-resident tax withheld at source (1.17 USD, convert to CAD @ 1.392879)","settlement_date":"2026-01-08T00:00:00.000Z","processing_date":"2026-01-08T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c3d"},{"_id":"69df9a02a060da04ab4d9c46","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-08T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-BKQ8Qz4Me1Dff4oUYhfd3QSzftA","currency_amount":10.760015980287651,"description":"Taiwan Semicontucter MFG ADR: 11-DEC-2025 (record date) 7.0000 shares, gross 5.57 USD, convert to CAD @ 1.392879","settlement_date":"2026-01-08T00:00:00.000Z","processing_date":"2026-01-08T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c46"},{"_id":"69df9a02a060da04ab4d9c4f","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-08T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-bSVm5s1FxTUNPMbWcohHiGEIjA","currency_amount":1.28,"description":"Global X Defence Tech Index ETF Class A: 31-DEC-2025 (record date) 28.0000 shares, gross 1.28 CAD","settlement_date":"2026-01-08T00:00:00.000Z","processing_date":"2026-01-08T00:00:00.000Z","symbol":"SHLD","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c4f"},{"_id":"69df9a02a060da04ab4d9c58","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-12T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-Qc3hqHCxO1CN4P_ls6OgAne1o7E","currency_amount":0,"description":"LOAN 9.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-01-12T00:00:00.000Z","processing_date":"2026-01-12T00:00:00.000Z","symbol":"SHLD","quantity":9,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c58"},{"_id":"69df9a02a060da04ab4d9c61","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-14T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-oMz4iw43_G7LTxDEBFXUka0UqA","currency_amount":0,"description":"RECALL 6.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-01-14T00:00:00.000Z","processing_date":"2026-01-14T00:00:00.000Z","symbol":"SHLD","quantity":-6,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c61"},{"_id":"69df9a02a060da04ab4d9c6a","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-15T00:00:00.000Z","type":"interest","origin_type":"Interest","origin_id":"transaction-4_6fEGfRLR7bTkS50y52raKo4A","currency_amount":0.01,"description":"Accrued lending fee for DEC-25 of 0.0100 on 2026-01-15","settlement_date":"2026-01-15T00:00:00.000Z","processing_date":"2026-01-15T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9c6a"},{"_id":"69df9a02a060da04ab4d9c71","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-15T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-THLpdazalyw0a7fR7Z8aob8VVKc","currency_amount":0,"description":"RECALL 3.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-01-15T00:00:00.000Z","processing_date":"2026-01-15T00:00:00.000Z","symbol":"SHLD","quantity":-3,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c71"},{"_id":"69df9a02a060da04ab4d9c7a","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-16T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-vV0teiGtWV9yPnXYAbGnOcWL1QE","currency_amount":0,"description":"LOAN 6.0000 of Taiwan Semicontucter MFG ADR","settlement_date":"2026-01-16T00:00:00.000Z","processing_date":"2026-01-16T00:00:00.000Z","symbol":"TSM","quantity":6,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c7a"},{"_id":"69df9a02a060da04ab4d9c83","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-20T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-t7icTO94iTK7NVyPM2Jy8wMDcmk","currency_amount":0,"description":"RECALL 1.0000 of Taiwan Semicontucter MFG ADR","settlement_date":"2026-01-20T00:00:00.000Z","processing_date":"2026-01-20T00:00:00.000Z","symbol":"TSM","quantity":-1,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c83"},{"_id":"69df9a02a060da04ab4d9c8c","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-21T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-FtqQS32JMxgTPVkN0oqzmaHfkL0","currency_amount":0,"description":"RECALL 5.0000 of Taiwan Semicontucter MFG ADR","settlement_date":"2026-01-21T00:00:00.000Z","processing_date":"2026-01-21T00:00:00.000Z","symbol":"TSM","quantity":-5,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c8c"},{"_id":"69df9a02a060da04ab4d9c95","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-13T00:00:00.000Z","type":"interest","origin_type":"Interest","origin_id":"transaction-vc1VJEQ8h288ySJgMNyfM57iliE","currency_amount":0.01,"description":"Accrued lending fee for JAN-26 of 0.0100 on 2026-02-13","settlement_date":"2026-02-13T00:00:00.000Z","processing_date":"2026-02-13T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9c95"},{"_id":"69df9a02a060da04ab4d9c9c","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-18T00:00:00.000Z","type":"deposit","origin_type":"Contribution","origin_id":"transaction-BqFXWY8kDNyOuJkXDvpwHNjxgA","currency_amount":500,"description":"Transfer amount of CAD 500.0000 at 2026-02-18","settlement_date":"2026-02-18T00:00:00.000Z","processing_date":"2026-02-19T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9c9c"},{"_id":"69df9a02a060da04ab4d9ca3","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-19T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-J5MHrEFFOh4TwPKjGevJU4qoUXA","currency_amount":-172.3,"description":"Bought 5.0 of COHX - Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF for 172.3 CAD","settlement_date":"2026-02-20T00:00:00.000Z","processing_date":"2026-02-19T00:00:00.000Z","symbol":"COHX","quantity":5,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","name":"INVSTMT MNGR SR TR II ETF","id":"69ce86d8f6bdbcaa49d6981d"},"__v":0,"id":"69df9a02a060da04ab4d9ca3"},{"_id":"69df9a02a060da04ab4d9cac","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-19T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-69n5jZeIVtFKqr7lPf_mIoM2xKw","currency_amount":-340.05,"description":"Bought 1.0 of VRT - Vertiv Holdings Co (Class A) for 340.05 CAD","settlement_date":"2026-02-20T00:00:00.000Z","processing_date":"2026-02-19T00:00:00.000Z","symbol":"VRT","quantity":1,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","name":"VERTIV HOLDINGS CO","id":"5e954087fdf3e1c3ab77d6d5"},"__v":0,"id":"69df9a02a060da04ab4d9cac"},{"_id":"69df9a02a060da04ab4d9cb5","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-20T00:00:00.000Z","type":"deposit","origin_type":"Contribution","origin_id":"transaction-ToOMV9pjCdswphb5II7mNxU_zc","currency_amount":400,"description":"Transfer amount of CAD 400.0000 at 2026-02-20","settlement_date":"2026-02-20T00:00:00.000Z","processing_date":"2026-02-20T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9cb5"},{"_id":"69df9a02a060da04ab4d9cbc","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-25T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-Og_EhXumgrjdmn8DKx971rig7UE","currency_amount":-359.45,"description":"Bought 7.0 of COHX - Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF for 359.45 CAD","settlement_date":"2026-02-26T00:00:00.000Z","processing_date":"2026-02-25T00:00:00.000Z","symbol":"COHX","quantity":7,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","name":"INVSTMT MNGR SR TR II ETF","id":"69ce86d8f6bdbcaa49d6981d"},"__v":0,"id":"69df9a02a060da04ab4d9cbc"},{"_id":"69df9a02a060da04ab4d9cc5","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-04T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-e08vQvF0Li3YapDDAK966tUxPlg","currency_amount":-59.52,"description":"Bought 1.0 of COHX - Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF for 59.52 CAD","settlement_date":"2026-03-05T00:00:00.000Z","processing_date":"2026-03-04T00:00:00.000Z","symbol":"COHX","quantity":1,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","name":"INVSTMT MNGR SR TR II ETF","id":"69ce86d8f6bdbcaa49d6981d"},"__v":0,"id":"69df9a02a060da04ab4d9cc5"},{"_id":"69df9a02a060da04ab4d9cce","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-04T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-c1yD_d5JP0g4J0GkanXHG54OYPo","currency_amount":0,"description":"LOAN 8.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-03-04T00:00:00.000Z","processing_date":"2026-03-04T00:00:00.000Z","symbol":"SHLD","quantity":8,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9cce"},{"_id":"69df9a02a060da04ab4d9cd7","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-05T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-bn2ycf1_GDZGvk4rUXcb7ZtaS5c","currency_amount":0,"description":"RECALL 8.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-03-05T00:00:00.000Z","processing_date":"2026-03-05T00:00:00.000Z","symbol":"SHLD","quantity":-8,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9cd7"},{"_id":"69df9a02a060da04ab4d9ce0","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-26T00:00:00.000Z","type":"tax","origin_type":"Non Resident Withholding Tax","origin_id":"transaction-17GUlTiHnnL4SzfvgN0myjUxGQw","currency_amount":-0.01,"description":"Vertiv Holdings Co (Class A): Non-resident tax withheld at source (0.01 USD, convert to CAD @ 1.390179)","settlement_date":"2026-03-26T00:00:00.000Z","processing_date":"2026-03-26T00:00:00.000Z","symbol":"VRT","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","name":"VERTIV HOLDINGS CO","id":"5e954087fdf3e1c3ab77d6d5"},"__v":0,"id":"69df9a02a060da04ab4d9ce0"},{"_id":"69df9a02a060da04ab4d9ce9","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-26T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-N6xS4rMFgnshmc7LSkYAbuolIMA","currency_amount":0.11075199929163021,"description":"Vertiv Holdings Co (Class A): 17-MAR-2026 (record date) 1.0000 shares, gross 0.06 USD, convert to CAD @ 1.390179","settlement_date":"2026-03-26T00:00:00.000Z","processing_date":"2026-03-26T00:00:00.000Z","symbol":"VRT","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","name":"VERTIV HOLDINGS CO","id":"5e954087fdf3e1c3ab77d6d5"},"__v":0,"id":"69df9a02a060da04ab4d9ce9"},{"_id":"69df9a02a060da04ab4d9cf2","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-08T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-5gPPcXROZ9AdYjrEGqu5Xu4ehXA","currency_amount":0,"description":"LOAN 2.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-04-08T00:00:00.000Z","processing_date":"2026-04-08T00:00:00.000Z","symbol":"SHLD","quantity":2,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9cf2"},{"_id":"69df9a02a060da04ab4d9cfb","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-09T00:00:00.000Z","type":"tax","origin_type":"Non Resident Withholding Tax","origin_id":"transaction-1zoFTklwAVGfz1PXILcOZp4_vW0","currency_amount":-1.91,"description":"Taiwan Semiconductor Manufacturing: Non-resident tax withheld at source (1.38 USD, convert to CAD @ 1.387548)","settlement_date":"2026-04-09T00:00:00.000Z","processing_date":"2026-04-09T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9cfb"},{"_id":"69df9a02a060da04ab4d9d04","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-09T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-cfEB4tiDj3SoeQEl1GtA63J9h8o","currency_amount":12.604751950022157,"description":"Taiwan Semiconductor Manufacturing: 17-MAR-2026 (record date) 7.0000 shares, gross 6.57 USD, convert to CAD @ 1.387548","settlement_date":"2026-04-09T00:00:00.000Z","processing_date":"2026-04-09T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9d04"},{"_id":"69df9a02a060da04ab4d9d0d","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-09T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-6SSi_QmzTSZgj2rKYkuQCyNVB0o","currency_amount":0,"description":"RECALL 2.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-04-09T00:00:00.000Z","processing_date":"2026-04-09T00:00:00.000Z","symbol":"SHLD","quantity":-2,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9d0d"}],"history":[{"_id":"69df99f32ed2fd2147aa07bf","institution":"69df99f1cdfc85df2b3ca9ae","date":"2026-04-15T00:00:00.000Z","investment":"rrsp-zFaJa0vyVQ:rrsp:cad","user":"69df990fcd159040851807c4","currency_value":0,"value":0},{"_id":"69df99f32ed2fd2147aa07c0","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-15T00:00:00.000Z","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","currency_value":6012.94,"value":6012.94},{"_id":"69df99f32ed2fd2147aa07c5","institution":"69df99f1cdfc85df2b3ca9ae","user":"69df990fcd159040851807c4","date":"2026-04-15T00:00:00.000Z","investment":"non-registered-xmhr2zc_:cash:cad","currency_value":0.01,"value":0.01}],"liveUpdate":"2026-04-15T16:04:44.701122Z","usdCadRate":1.374};</script>
+
+<script>
+// ── AI CHAT ──
+var chatHistory=[];
+// ── Load saved conversations ──
+try{
+  var saved=localStorage.getItem('wp_chat_history');
+  if(saved){
+    chatHistory=JSON.parse(saved);
+    // Restore messages in UI when AI tab is first shown
+    var restored=false;
+    function restoreChat(){
+      if(restored)return;restored=true;
+      var msgs=$('chatMsgs');
+      chatHistory.forEach(function(m){
+        var div=document.createElement('div');
+        div.className='msg msg-'+(m.role==='user'?'user':'ai');
+        div.innerHTML='<div class="msg-content">'+escapeHtml(m.content)+'</div>';
+        msgs.appendChild(div);
+      });
+      if(chatHistory.length>0)$('chatQuick').style.display='none';
+      scrollChat();
+    }
+    // Restore when tab is clicked or if already visible
+    var aiTab=document.querySelector('[data-t="ai"]');
+    if(aiTab)aiTab.addEventListener('click',function(){setTimeout(restoreChat,50)});
+  }
+}catch(e){}
+function saveChat(){try{localStorage.setItem('wp_chat_history',JSON.stringify(chatHistory))}catch(e){}}
+
+var chatBusy=false;
+function sendChat(msg){
+  if(!msg||!msg.trim()||chatBusy)return;msg=msg.trim();
+  chatBusy=true;
+  addChatMsg('user',msg);chatHistory.push({role:'user',content:msg});
+  $('chatIn').value='';$('chatSend').disabled=true;$('chatQuick').style.display='none';
+  var typing=document.createElement('div');typing.className='msg msg-typing';typing.id='chatTyping';typing.innerHTML='<div class="msg-content">Thinking</div>';$('chatMsgs').appendChild(typing);scrollChat();
+  fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,history:chatHistory.slice(-10)})}).then(function(r){
+    return r.text();
+  }).then(function(body){
+    removeTyping();
+    var fullText='';
+    body.split('\n').forEach(function(line){
+      if(!line.startsWith('data: '))return;
+      var data=line.substring(6).trim();
+      if(data==='[DONE]')return;
+      try{
+        var parsed=JSON.parse(data);
+        if(parsed.error){fullText='Error: '+parsed.error;return}
+        if(parsed.text)fullText+=parsed.text;
+      }catch(e){}
+    });
+    if(fullText)addChatMsg('ai',fullText);
+    finishChat(fullText);
+  }).catch(function(err){
+    removeTyping();
+    addChatMsg('ai','Connection error: make sure server.py is running.');
+    finishChat('');
+  });
+}
+function finishChat(text){if(text)chatHistory.push({role:'assistant',content:text});saveChat();chatBusy=false;$('chatSend').disabled=!$('chatIn').value.trim();$('chatIn').focus()}
+function addChatMsg(role,text){var div=document.createElement('div');div.className='msg msg-'+(role==='user'?'user':'ai');div.innerHTML='<div class="msg-content">'+escapeHtml(text)+'</div>';$('chatMsgs').appendChild(div);scrollChat();return div}
+function escapeHtml(t){if(!t)return'';return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function removeTyping(){var t=document.getElementById('chatTyping');if(t)t.remove()}
+function scrollChat(){var el=$('chatMsgs');el.scrollTop=el.scrollHeight}
+$('chatSend').disabled=true;
+$('chatIn').addEventListener('input',function(){$('chatSend').disabled=!this.value.trim()});
+$('chatIn').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat(this.value)}});
+$('chatSend').addEventListener('click',function(){sendChat($('chatIn').value)});
+$$('.qbtn').forEach(function(btn){btn.addEventListener('click',function(){sendChat(btn.dataset.q)})});
+$('chatClear').addEventListener('click',function(){
+  chatHistory=[];saveChat();
+  $('chatMsgs').innerHTML='<div class="msg msg-ai"><div class="msg-content">Conversation cleared. How can I help you?</div></div>';
+  $('chatQuick').style.display='flex';
+});
+</script>
+
+<script>var EMBEDDED_DATA={"exportDate":"2026-04-15T15:57:11.912Z","positions":[{"_id":"69df99f42ed2fd2147aa0a19","security":{"_id":"67649cc71e8a2c958bb84266","currency":"usd","symbol":"LEVGQ","type":"equity","aliases":["THE LION ELECTRIC COMPANY","LION ELEC CO COM","LION ELECTRIC COMPANY","LION ELEC CO","LION ELECTRIC COMPANY (THE)","COMPAGNIE ELECTRIQUE LION","Lion Electric Co (The)","LION ELECTRIC COMPANY *","COMPAGNIE ELECTRIQUE LIO*"],"name":"THE LION ELECTRIC COMPANY","geo":"United States","high_date":"2025-06-08T15:59:49.211Z","high_price":0.25549999999999995,"last_date":"2026-04-15T16:04:44.700774Z","last_price":0.024,"low_date":"2025-12-03T01:24:56.541Z","low_price":0.00019825019963636364,"exchange":"US OTC","industry":"Automobiles","sector":"Information Technology","id":"67649cc71e8a2c958bb84266","day_high":0.004,"day_low":0.003,"volume":38993},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"non-registered-xmhr2zc_:cash:cad","quantity":11,"book_value":241.56,"market_value":0,"security_book_value":175.5906089652,"security_market_value":0,"currency":"cad","gain_percent":-1,"gain_currency_amount":-241.56,"gain_amount":-241.56}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":241.56,"market_value":0.36,"quantity":11,"gain_percent":-0.9985,"gain_amount":-241.2,"currency":"cad","id":"69df99f42ed2fd2147aa0a19"},{"_id":"69df99f32ed2fd2147aa090a","security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","aliases":["INVSTMT MNGR SR TR II ETF","Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF"],"cusip":"46152A569","name":"INVSTMT MNGR SR TR II ETF","geo":"United States","high_date":"2026-04-15T14:00:19.766Z","high_price":42.710564265600006,"last_date":"2026-04-15T16:04:44.700834Z","last_price":41.63,"low_date":"2026-04-02T15:10:16.795Z","low_price":29.019899999999996,"id":"69ce86d8f6bdbcaa49d6981d","day_high":44.805,"day_low":41.071,"volume":177595},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":13,"book_value":591.27,"market_value":763.84,"security_book_value":429.79574169089994,"security_market_value":554.84,"currency":"cad","gain_percent":0.2919,"gain_currency_amount":172.57000000000005,"gain_amount":172.57000000000005}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":591.27,"market_value":743.6,"quantity":13,"gain_percent":0.2576,"gain_amount":152.33,"currency":"cad","id":"69df99f32ed2fd2147aa090a"},{"_id":"69df99f32ed2fd2147aa090b","user":"69df990fcd159040851807c4","security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","aliases":["Global X Defence Tech Index ETF - Class A","GLOBAL X DEFENCE TECH INDEX ETF UNITS CLASS A","GLOBAL X DEFENCE TECH INDEX ETF","GLOBAL X INVESTMENTS CANADA INC. DEFENCE TECH INDEX ETF","GLB X DEF TECH INDX ETF-A","GLOBAL X DEFENSE TACH INDEX ETF UNIT CL A","GLOBAL X DEFENSE TECH INDEX ETF UNIT CL A","GLOBAL X DEF TECH IDX ETF CL A","GLOBAL X FUNDS GLOBAL X DEFENSE TECH ETF","GLOBAL X DEFENCE TECH ETF"],"name":"Global X Defence Tech Index ETF - Class A","geo":"Canada","high_date":"2025-12-02T17:57:43.010Z","high_price":86.03140625,"last_date":"2026-04-15T16:04:44.700850Z","last_price":29.35,"low_date":"2025-05-14T04:03:15.669Z","low_price":20.94,"id":"682415fe38356aefc56863f3","day_high":29.51,"day_low":29.35,"volume":7217},"__v":0,"categories":[{"category":"Canadian Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":28,"book_value":733.41,"market_value":823.76,"currency":"cad","gain_percent":0.1232,"gain_currency_amount":90.35000000000002,"gain_amount":90.35000000000002}],"override_investments":[],"class":"equity","category":"Canadian Stocks","geo":null,"book_value":733.41,"market_value":821.8,"quantity":28,"gain_percent":0.1205,"gain_amount":88.39,"currency":"cad","id":"69df99f32ed2fd2147aa090b"},{"_id":"69df99f32ed2fd2147aa090e","security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","last_price":377.075,"high_date":"2026-02-24T02:17:25.810Z","high_price":506.34461538461534,"low_date":"2025-11-10T01:15:37.893Z","low_price":93.57,"last_date":"2026-04-15T16:04:44.700862Z","aliases":["TAIWAN SEMICONDUCTOR MANUFAC","TAIWAN SEMICON MAN SP/ADR","TAIWAN SEMICONDUCTOR MFG CO LTD-SPONSORED ADR REPSTG 5 COM","TAIWAN SEMICONDUCTOR-SP ADR","Taiwan Semiconductor Manufacturing Company Ltd.","TAIWAN SEMICONDUCTOR MFG CO SP","Taiwan Semiconductor Manufacturing Co Ltd","Taiwan Semiconductor Manufacturing ADR Representing Five","TAIWAN SEMICONDUCTOR MANUFACTURING SPON ADS EACH REP 5 ORD TWD10","CALL TSM:US 17JAN2020 45","TAIWAN SEMICON MFG CO S/ADR","Taiwan Semiconductor Manufactur","TAIWAN SEMICONDUCTR F SPONSORED ADR 1 ADR REPS 5 ORD SHS","TAIWAN SEMI","Taiwan Semiconductor Manufacturing Compa","TAIWAN SEMICONDUCTOR MFG CO LTD ADR","Taiwan Semiconductor Manufacturing","TAIWAN SEMICON MFG CO","TSM TAIWAN SEMICONDUCTOR MFG CO SP","TAIWAN SEMICONDUCTOR MFG CO ADS","TAIWAN SEMICONDUCTOR MANUSPONSORED ADR","Taiwan Semiconductor MFG.","Taiwan Semiconductor Manufacturing - ADR","TAIWAN SEMICON MFG CO LTD","TAIWAN SEMICONDUCTOR MFG CO LTD-SPONSORED ADR REPSTG 5 COM TAIWAN SEMICONDUCTOR MFG CO LTD-SPONSORED ADR REPSTG 5 COM"],"geo":"United States","exchange":"New York Stock Exchange","industry":"Electronic Equipment, Instruments & Components","sector":"Information Technology","id":"574b782a109d820e001ae529","day_high":381.97,"day_low":376.51,"volume":6521872},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":7,"book_value":2556.88,"market_value":3660.96,"security_book_value":1858.6028988696,"security_market_value":2659.23,"currency":"cad","gain_percent":0.4318,"gain_currency_amount":1104.08,"gain_amount":1104.08}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":2556.88,"market_value":3626.71,"quantity":7,"gain_percent":0.4184,"gain_amount":1069.83,"currency":"cad","id":"69df99f32ed2fd2147aa090e"},{"_id":"69df99f32ed2fd2147aa0910","user":"69df990fcd159040851807c4","security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","aliases":["VERTIV HOLDINGS CO","VERTIV HOLDINGS LLC CL-A","Vertiv Holdings LLC","VERTIV HLDGS LLC A","VERTIV HOLDINGS LLC CLASS A COMMON STOCK","VERTIV HOLDINGS CO-A","Vertiv Holdings Co (Class A)","VERTIV HOLDINGS LLC","Vertiv Holdings Co","Vertiv Holdings","Vertiv Holdings Co - Ordinary Shares - Class A","VERTIV HLD A ORD","Vertiv Holdings Co. Class A","VERTIV HOLDINGS LLC CLASS A (as at October 31, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 17, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 18, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 19, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 20, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 21, 2025)","VERTIV HOLDINGS LLC CLASS A (as at November 28, 2025)"],"name":"VERTIV HOLDINGS CO","last_date":"2026-04-15T16:04:44.700874Z","last_price":302.57,"high_date":"2026-04-14T20:12:09.016Z","high_price":427.9606,"low_date":"2025-05-13T19:15:56.257Z","low_price":51.128732698899995,"geo":"United States","exchange":"New York Stock Exchange","industry":"Electronic Equipment, Instruments & Components","sector":"Information Technology","id":"5e954087fdf3e1c3ab77d6d5","day_high":310.99,"day_low":302.275,"volume":2323093},"__v":0,"categories":[{"category":"US Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":1,"book_value":340.05,"market_value":427.47,"security_book_value":247.1832529335,"security_market_value":310.51,"currency":"cad","gain_percent":0.2571,"gain_currency_amount":87.42000000000002,"gain_amount":87.42000000000002}],"override_investments":[],"class":"equity","category":"US Stocks","geo":null,"book_value":340.05,"market_value":415.73,"quantity":1,"gain_percent":0.2226,"gain_amount":75.68,"currency":"cad","id":"69df99f32ed2fd2147aa0910"},{"_id":"69df99f32ed2fd2147aa0911","security":{"_id":"651226b7d99c4be5fbb2846a","currency":"cad","symbol":"XAD","type":"equity","aliases":["ISHARES US AERO&DEF ETF","iShares U.S. Aerospace & Defense ETF - CAD","ISHARES US AEROSPACE & DEFENSE INDE CAD UNIT","ISHARES U S AEROSPACE & DEFENSE INDEX ETF CAD UNIT","ISHARES U.S AEROSPACE & DEFENSE INDX ETF","ISHARES U S AEROSPACE & DEFENS","BLACKROCK ASSET MANAGEMENT CA LTD ISHARES U.S. AEROSPACE & DEFENSE INDEX E","ISHARE US AERO & DEFENSE ETF","iShares US Aerospace & Defense Index ETF"],"name":"ISHARES US AERO&DEF ETF","high_date":"2026-03-02T00:00:00.000Z","high_price":110.67,"last_date":"2026-04-15T16:04:44.700884Z","last_price":104.04,"low_date":"2025-04-22T00:00:00.000Z","low_price":65.39,"geo":"Canada","id":"651226b7d99c4be5fbb2846a","day_high":105.96,"day_low":104.04,"volume":1704},"user":"69df990fcd159040851807c4","__v":0,"categories":[{"category":"Canadian Stocks","weight":1}],"classes":[{"class":"equity","weight":1}],"investments":[{"institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","quantity":3,"book_value":274.65,"market_value":315.06,"currency":"cad","gain_percent":0.1471,"gain_currency_amount":40.410000000000025,"gain_amount":40.410000000000025}],"override_investments":[],"class":"equity","category":"Canadian Stocks","geo":null,"book_value":274.65,"market_value":312.12,"quantity":3,"gain_percent":0.1364,"gain_amount":37.47,"currency":"cad","id":"69df99f32ed2fd2147aa0911"}],"transactions":[{"_id":"69df9a02a060da04ab4d9c34","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-05T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-zBecDkZigkRIapF84k1jybJegM","currency_amount":0.69,"description":"iShares U.S. Aerospace & Defense ETF CAD: 30-DEC-2025 (record date) 3.0000 shares, gross 0.69 CAD","settlement_date":"2026-01-05T00:00:00.000Z","processing_date":"2026-01-05T00:00:00.000Z","symbol":"XAD","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"651226b7d99c4be5fbb2846a","currency":"cad","symbol":"XAD","type":"equity","name":"ISHARES US AERO&DEF ETF","id":"651226b7d99c4be5fbb2846a"},"__v":0,"id":"69df9a02a060da04ab4d9c34"},{"_id":"69df9a02a060da04ab4d9c3d","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-08T00:00:00.000Z","type":"tax","origin_type":"Non Resident Withholding Tax","origin_id":"transaction-7a_GyvSBHAZhD0zOI1Nc5eno7EM","currency_amount":-1.63,"description":"Taiwan Semicontucter MFG ADR: Non-resident tax withheld at source (1.17 USD, convert to CAD @ 1.392879)","settlement_date":"2026-01-08T00:00:00.000Z","processing_date":"2026-01-08T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c3d"},{"_id":"69df9a02a060da04ab4d9c46","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-08T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-BKQ8Qz4Me1Dff4oUYhfd3QSzftA","currency_amount":10.760015980287651,"description":"Taiwan Semicontucter MFG ADR: 11-DEC-2025 (record date) 7.0000 shares, gross 5.57 USD, convert to CAD @ 1.392879","settlement_date":"2026-01-08T00:00:00.000Z","processing_date":"2026-01-08T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c46"},{"_id":"69df9a02a060da04ab4d9c4f","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-08T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-bSVm5s1FxTUNPMbWcohHiGEIjA","currency_amount":1.28,"description":"Global X Defence Tech Index ETF Class A: 31-DEC-2025 (record date) 28.0000 shares, gross 1.28 CAD","settlement_date":"2026-01-08T00:00:00.000Z","processing_date":"2026-01-08T00:00:00.000Z","symbol":"SHLD","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c4f"},{"_id":"69df9a02a060da04ab4d9c58","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-12T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-Qc3hqHCxO1CN4P_ls6OgAne1o7E","currency_amount":0,"description":"LOAN 9.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-01-12T00:00:00.000Z","processing_date":"2026-01-12T00:00:00.000Z","symbol":"SHLD","quantity":9,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c58"},{"_id":"69df9a02a060da04ab4d9c61","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-14T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-oMz4iw43_G7LTxDEBFXUka0UqA","currency_amount":0,"description":"RECALL 6.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-01-14T00:00:00.000Z","processing_date":"2026-01-14T00:00:00.000Z","symbol":"SHLD","quantity":-6,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c61"},{"_id":"69df9a02a060da04ab4d9c6a","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-15T00:00:00.000Z","type":"interest","origin_type":"Interest","origin_id":"transaction-4_6fEGfRLR7bTkS50y52raKo4A","currency_amount":0.01,"description":"Accrued lending fee for DEC-25 of 0.0100 on 2026-01-15","settlement_date":"2026-01-15T00:00:00.000Z","processing_date":"2026-01-15T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9c6a"},{"_id":"69df9a02a060da04ab4d9c71","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-15T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-THLpdazalyw0a7fR7Z8aob8VVKc","currency_amount":0,"description":"RECALL 3.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-01-15T00:00:00.000Z","processing_date":"2026-01-15T00:00:00.000Z","symbol":"SHLD","quantity":-3,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9c71"},{"_id":"69df9a02a060da04ab4d9c7a","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-16T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-vV0teiGtWV9yPnXYAbGnOcWL1QE","currency_amount":0,"description":"LOAN 6.0000 of Taiwan Semicontucter MFG ADR","settlement_date":"2026-01-16T00:00:00.000Z","processing_date":"2026-01-16T00:00:00.000Z","symbol":"TSM","quantity":6,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c7a"},{"_id":"69df9a02a060da04ab4d9c83","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-20T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-t7icTO94iTK7NVyPM2Jy8wMDcmk","currency_amount":0,"description":"RECALL 1.0000 of Taiwan Semicontucter MFG ADR","settlement_date":"2026-01-20T00:00:00.000Z","processing_date":"2026-01-20T00:00:00.000Z","symbol":"TSM","quantity":-1,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c83"},{"_id":"69df9a02a060da04ab4d9c8c","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-01-21T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-FtqQS32JMxgTPVkN0oqzmaHfkL0","currency_amount":0,"description":"RECALL 5.0000 of Taiwan Semicontucter MFG ADR","settlement_date":"2026-01-21T00:00:00.000Z","processing_date":"2026-01-21T00:00:00.000Z","symbol":"TSM","quantity":-5,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9c8c"},{"_id":"69df9a02a060da04ab4d9c95","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-13T00:00:00.000Z","type":"interest","origin_type":"Interest","origin_id":"transaction-vc1VJEQ8h288ySJgMNyfM57iliE","currency_amount":0.01,"description":"Accrued lending fee for JAN-26 of 0.0100 on 2026-02-13","settlement_date":"2026-02-13T00:00:00.000Z","processing_date":"2026-02-13T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9c95"},{"_id":"69df9a02a060da04ab4d9c9c","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-18T00:00:00.000Z","type":"deposit","origin_type":"Contribution","origin_id":"transaction-BqFXWY8kDNyOuJkXDvpwHNjxgA","currency_amount":500,"description":"Transfer amount of CAD 500.0000 at 2026-02-18","settlement_date":"2026-02-18T00:00:00.000Z","processing_date":"2026-02-19T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9c9c"},{"_id":"69df9a02a060da04ab4d9ca3","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-19T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-J5MHrEFFOh4TwPKjGevJU4qoUXA","currency_amount":-172.3,"description":"Bought 5.0 of COHX - Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF for 172.3 CAD","settlement_date":"2026-02-20T00:00:00.000Z","processing_date":"2026-02-19T00:00:00.000Z","symbol":"COHX","quantity":5,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","name":"INVSTMT MNGR SR TR II ETF","id":"69ce86d8f6bdbcaa49d6981d"},"__v":0,"id":"69df9a02a060da04ab4d9ca3"},{"_id":"69df9a02a060da04ab4d9cac","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-19T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-69n5jZeIVtFKqr7lPf_mIoM2xKw","currency_amount":-340.05,"description":"Bought 1.0 of VRT - Vertiv Holdings Co (Class A) for 340.05 CAD","settlement_date":"2026-02-20T00:00:00.000Z","processing_date":"2026-02-19T00:00:00.000Z","symbol":"VRT","quantity":1,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","name":"VERTIV HOLDINGS CO","id":"5e954087fdf3e1c3ab77d6d5"},"__v":0,"id":"69df9a02a060da04ab4d9cac"},{"_id":"69df9a02a060da04ab4d9cb5","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-20T00:00:00.000Z","type":"deposit","origin_type":"Contribution","origin_id":"transaction-ToOMV9pjCdswphb5II7mNxU_zc","currency_amount":400,"description":"Transfer amount of CAD 400.0000 at 2026-02-20","settlement_date":"2026-02-20T00:00:00.000Z","processing_date":"2026-02-20T00:00:00.000Z","incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"__v":0,"id":"69df9a02a060da04ab4d9cb5"},{"_id":"69df9a02a060da04ab4d9cbc","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-02-25T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-Og_EhXumgrjdmn8DKx971rig7UE","currency_amount":-359.45,"description":"Bought 7.0 of COHX - Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF for 359.45 CAD","settlement_date":"2026-02-26T00:00:00.000Z","processing_date":"2026-02-25T00:00:00.000Z","symbol":"COHX","quantity":7,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","name":"INVSTMT MNGR SR TR II ETF","id":"69ce86d8f6bdbcaa49d6981d"},"__v":0,"id":"69df9a02a060da04ab4d9cbc"},{"_id":"69df9a02a060da04ab4d9cc5","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-04T00:00:00.000Z","type":"buy","origin_type":"Buy","origin_id":"transaction-e08vQvF0Li3YapDDAK966tUxPlg","currency_amount":-59.52,"description":"Bought 1.0 of COHX - Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF for 59.52 CAD","settlement_date":"2026-03-05T00:00:00.000Z","processing_date":"2026-03-04T00:00:00.000Z","symbol":"COHX","quantity":1,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"69ce86d8f6bdbcaa49d6981d","symbol":"COHX","type":"equity","currency":"usd","name":"INVSTMT MNGR SR TR II ETF","id":"69ce86d8f6bdbcaa49d6981d"},"__v":0,"id":"69df9a02a060da04ab4d9cc5"},{"_id":"69df9a02a060da04ab4d9cce","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-04T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-c1yD_d5JP0g4J0GkanXHG54OYPo","currency_amount":0,"description":"LOAN 8.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-03-04T00:00:00.000Z","processing_date":"2026-03-04T00:00:00.000Z","symbol":"SHLD","quantity":8,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9cce"},{"_id":"69df9a02a060da04ab4d9cd7","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-05T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-bn2ycf1_GDZGvk4rUXcb7ZtaS5c","currency_amount":0,"description":"RECALL 8.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-03-05T00:00:00.000Z","processing_date":"2026-03-05T00:00:00.000Z","symbol":"SHLD","quantity":-8,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9cd7"},{"_id":"69df9a02a060da04ab4d9ce0","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-26T00:00:00.000Z","type":"tax","origin_type":"Non Resident Withholding Tax","origin_id":"transaction-17GUlTiHnnL4SzfvgN0myjUxGQw","currency_amount":-0.01,"description":"Vertiv Holdings Co (Class A): Non-resident tax withheld at source (0.01 USD, convert to CAD @ 1.390179)","settlement_date":"2026-03-26T00:00:00.000Z","processing_date":"2026-03-26T00:00:00.000Z","symbol":"VRT","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","name":"VERTIV HOLDINGS CO","id":"5e954087fdf3e1c3ab77d6d5"},"__v":0,"id":"69df9a02a060da04ab4d9ce0"},{"_id":"69df9a02a060da04ab4d9ce9","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-03-26T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-N6xS4rMFgnshmc7LSkYAbuolIMA","currency_amount":0.11075199929163021,"description":"Vertiv Holdings Co (Class A): 17-MAR-2026 (record date) 1.0000 shares, gross 0.06 USD, convert to CAD @ 1.390179","settlement_date":"2026-03-26T00:00:00.000Z","processing_date":"2026-03-26T00:00:00.000Z","symbol":"VRT","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"5e954087fdf3e1c3ab77d6d5","currency":"usd","symbol":"VRT","type":"equity","name":"VERTIV HOLDINGS CO","id":"5e954087fdf3e1c3ab77d6d5"},"__v":0,"id":"69df9a02a060da04ab4d9ce9"},{"_id":"69df9a02a060da04ab4d9cf2","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-08T00:00:00.000Z","type":"loan","origin_type":"FPL loaned securities","origin_id":"transaction-5gPPcXROZ9AdYjrEGqu5Xu4ehXA","currency_amount":0,"description":"LOAN 2.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-04-08T00:00:00.000Z","processing_date":"2026-04-08T00:00:00.000Z","symbol":"SHLD","quantity":2,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9cf2"},{"_id":"69df9a02a060da04ab4d9cfb","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-09T00:00:00.000Z","type":"tax","origin_type":"Non Resident Withholding Tax","origin_id":"transaction-1zoFTklwAVGfz1PXILcOZp4_vW0","currency_amount":-1.91,"description":"Taiwan Semiconductor Manufacturing: Non-resident tax withheld at source (1.38 USD, convert to CAD @ 1.387548)","settlement_date":"2026-04-09T00:00:00.000Z","processing_date":"2026-04-09T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9cfb"},{"_id":"69df9a02a060da04ab4d9d04","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-09T00:00:00.000Z","type":"dividend","origin_type":"Dividend","origin_id":"transaction-cfEB4tiDj3SoeQEl1GtA63J9h8o","currency_amount":12.604751950022157,"description":"Taiwan Semiconductor Manufacturing: 17-MAR-2026 (record date) 7.0000 shares, gross 6.57 USD, convert to CAD @ 1.387548","settlement_date":"2026-04-09T00:00:00.000Z","processing_date":"2026-04-09T00:00:00.000Z","symbol":"TSM","quantity":0,"incomplete":[],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"574b782a109d820e001ae529","currency":"usd","symbol":"TSM","type":"equity","name":"TAIWAN SEMICONDUCTOR MANUFAC","id":"574b782a109d820e001ae529"},"__v":0,"id":"69df9a02a060da04ab4d9d04"},{"_id":"69df9a02a060da04ab4d9d0d","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-09T00:00:00.000Z","type":"recall","origin_type":"FPL recalled securities","origin_id":"transaction-6SSi_QmzTSZgj2rKYkuQCyNVB0o","currency_amount":0,"description":"RECALL 2.0000 of Global X Defence Tech Index ETF Class A","settlement_date":"2026-04-09T00:00:00.000Z","processing_date":"2026-04-09T00:00:00.000Z","symbol":"SHLD","quantity":-2,"incomplete":["currency_amount","quantity"],"other_parties":[],"amounts":[],"history":[],"parts":[],"security":{"_id":"682415fe38356aefc56863f3","currency":"cad","symbol":"SHLD","type":"equity","name":"Global X Defence Tech Index ETF - Class A","id":"682415fe38356aefc56863f3"},"__v":0,"id":"69df9a02a060da04ab4d9d0d"}],"history":[{"_id":"69df99f32ed2fd2147aa07bf","institution":"69df99f1cdfc85df2b3ca9ae","date":"2026-04-15T00:00:00.000Z","investment":"rrsp-zFaJa0vyVQ:rrsp:cad","user":"69df990fcd159040851807c4","currency_value":0,"value":0},{"_id":"69df99f32ed2fd2147aa07c0","investment":"tfsa-uE_whJmynA:tfsa:cad","date":"2026-04-15T00:00:00.000Z","user":"69df990fcd159040851807c4","institution":"69df99f1cdfc85df2b3ca9ae","currency_value":6012.94,"value":6012.94},{"_id":"69df99f32ed2fd2147aa07c5","institution":"69df99f1cdfc85df2b3ca9ae","user":"69df990fcd159040851807c4","date":"2026-04-15T00:00:00.000Z","investment":"non-registered-xmhr2zc_:cash:cad","currency_value":0.01,"value":0.01}],"liveUpdate":"2026-04-15T16:04:44.701122Z","usdCadRate":1.374,"activities":[{"d":"2021-02-25","act":"Non-enregistr\u00e9","t":"MoneyMovement","st":"EFT","sym":"","nm":"","cur":"CAD","qty":1000.0,"px":0.0,"amt":1000.0},{"d":"2021-03-04","act":"Non-enregistr\u00e9","t":"Trade","st":"BUY","sym":"NGA","nm":"Northern Genesis Acquisition Corp","cur":"CAD","qty":11.0,"px":26.975949,"amt":-296.74},{"d":"2021-03-04","act":"Non-enregistr\u00e9","t":"Trade","st":"BUY","sym":"TSM","nm":"Taiwan Semiconductor Manufacturing","cur":"CAD","qty":4.0,"px":164.97719667,"amt":-659.91},{"d":"2021-04-16","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.74,"px":0.0,"amt":1.74},{"d":"2021-05-10","act":"Non-enregistr\u00e9","t":"Trade","st":"BUY","sym":"LEV","nm":"Lion Electric Co (The)","cur":"CAD","qty":11.0,"px":21.96,"amt":-241.56},{"d":"2021-05-10","act":"Non-enregistr\u00e9","t":"Trade","st":"SELL","sym":"NGA","nm":"Northern Genesis Acquisition Corp","cur":"CAD","qty":-11.0,"px":21.9600004979,"amt":241.56},{"d":"2021-07-16","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.78,"px":0.0,"amt":1.78},{"d":"2021-10-14","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.92,"px":0.0,"amt":1.92},{"d":"2022-01-13","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.97,"px":0.0,"amt":1.97},{"d":"2022-04-14","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.89,"px":0.0,"amt":1.89},{"d":"2022-07-14","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.92,"px":0.0,"amt":1.92},{"d":"2022-10-13","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.88,"px":0.0,"amt":1.88},{"d":"2023-01-13","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.89,"px":0.0,"amt":1.89},{"d":"2023-04-13","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.91,"px":0.0,"amt":1.91},{"d":"2023-07-13","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.82,"px":0.0,"amt":1.82},{"d":"2023-10-12","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":2.01,"px":0.0,"amt":2.01},{"d":"2024-01-11","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":2.05,"px":0.0,"amt":2.05},{"d":"2024-04-11","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":2.38,"px":0.0,"amt":2.38},{"d":"2024-07-11","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":2.96,"px":0.0,"amt":2.96},{"d":"2024-09-20","act":"Non-enregistr\u00e9","t":"MoneyMovement","st":"E_TRFIN","sym":"","nm":"","cur":"CAD","qty":300.0,"px":0.0,"amt":300.0},{"d":"2024-09-20","act":"Non-enregistr\u00e9","t":"MoneyMovement","st":"EFT","sym":"","nm":"","cur":"CAD","qty":141.54,"px":0.0,"amt":141.54},{"d":"2024-09-23","act":"Non-enregistr\u00e9","t":"Trade","st":"BUY","sym":"TSM","nm":"Taiwan Semiconductor Manufacturing","cur":"CAD","qty":2.0,"px":241.5217385,"amt":-483.04},{"d":"2024-10-09","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":3.44,"px":0.0,"amt":3.44},{"d":"2025-01-09","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":5.28,"px":0.0,"amt":5.28},{"d":"2025-04-10","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":5.71,"px":0.0,"amt":5.71},{"d":"2025-04-10","act":"Non-enregistr\u00e9","t":"CorporateAction","st":"INTERNAL_REORGANIZATION","sym":"LEVGQ","nm":"Lion Electric Co (The)","cur":"","qty":11.0,"px":0.0,"amt":0.0},{"d":"2025-04-10","act":"Non-enregistr\u00e9","t":"CorporateAction","st":"INTERNAL_REORGANIZATION","sym":"LEV","nm":"Lion Electric Co (The)","cur":"","qty":-11.0,"px":0.0,"amt":0.0},{"d":"2025-05-14","act":"Non-enregistr\u00e9","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2025-06-13","act":"Non-enregistr\u00e9","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2025-07-10","act":"Non-enregistr\u00e9","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":6.42,"px":0.0,"amt":6.42},{"d":"2025-07-15","act":"Non-enregistr\u00e9","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2025-08-15","act":"Non-enregistr\u00e9","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2025-09-15","act":"Non-enregistr\u00e9","t":"MoneyMovement","st":"TRANSFER","sym":"","nm":"","cur":"CAD","qty":-2151.18,"px":0.0,"amt":-2151.18},{"d":"2025-09-15","act":"Non-enregistr\u00e9","t":"Trade","st":"SELL","sym":"TSM","nm":"Taiwan Semiconductor Manufacturing","cur":"CAD","qty":-6.0,"px":358.5296455,"amt":2151.18},{"d":"2025-09-15","act":"Non-enregistr\u00e9","t":"MoneyMovement","st":"TRANSFER","sym":"","nm":"","cur":"CAD","qty":-45.88,"px":0.0,"amt":-45.88},{"d":"2025-09-15","act":"Non-enregistr\u00e9","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2025-10-15","act":"Non-enregistr\u00e9","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2025-09-15","act":"CELI","t":"MoneyMovement","st":"EFT","sym":"","nm":"","cur":"CAD","qty":2151.18,"px":0.0,"amt":2151.18},{"d":"2025-09-15","act":"CELI","t":"Trade","st":"BUY","sym":"TSM","nm":"Taiwan Semiconductor Manufacturing","cur":"CAD","qty":6.0,"px":358.5296455,"amt":-2151.18},{"d":"2025-09-15","act":"CELI","t":"MoneyMovement","st":"EFT","sym":"","nm":"","cur":"CAD","qty":45.88,"px":0.0,"amt":45.88},{"d":"2025-09-15","act":"CELI","t":"MoneyMovement","st":"E_TRFIN","sym":"","nm":"","cur":"CAD","qty":700.0,"px":0.0,"amt":700.0},{"d":"2025-09-15","act":"CELI","t":"MoneyMovement","st":"EFT","sym":"","nm":"","cur":"CAD","qty":200.0,"px":0.0,"amt":200.0},{"d":"2025-09-15","act":"CELI","t":"MoneyMovement","st":"EFT","sym":"","nm":"","cur":"CAD","qty":500.0,"px":0.0,"amt":500.0},{"d":"2025-09-16","act":"CELI","t":"Trade","st":"BUY","sym":"SHLD","nm":"Global X Defence Tech Index ETF - Class A","cur":"CAD","qty":9.0,"px":26.2,"amt":-235.8},{"d":"2025-09-16","act":"CELI","t":"Trade","st":"BUY","sym":"SHLD","nm":"Global X Defence Tech Index ETF - Class A","cur":"CAD","qty":19.0,"px":26.19,"amt":-497.61},{"d":"2025-10-09","act":"CELI","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":6.94,"px":0.0,"amt":6.94},{"d":"2025-10-15","act":"CELI","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2025-10-15","act":"CELI","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2025-10-15","act":"CELI","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.06,"px":0.0,"amt":0.06},{"d":"2025-11-14","act":"CELI","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2025-11-14","act":"CELI","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.06,"px":0.0,"amt":0.06},{"d":"2025-11-25","act":"CELI","t":"Trade","st":"BUY","sym":"TSM","nm":"Taiwan Semiconductor Manufacturing","cur":"CAD","qty":1.0,"px":405.7009866,"amt":-405.7},{"d":"2025-11-25","act":"CELI","t":"Trade","st":"BUY","sym":"XAD","nm":"iShares U.S. Aerospace & Defense ETF - CAD","cur":"CAD","qty":3.0,"px":91.55,"amt":-274.65},{"d":"2025-12-12","act":"CELI","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2026-01-05","act":"CELI","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":0.69,"px":0.0,"amt":0.69},{"d":"2026-01-08","act":"CELI","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":1.28,"px":0.0,"amt":1.28},{"d":"2026-01-08","act":"CELI","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":7.76,"px":0.0,"amt":7.76},{"d":"2026-01-15","act":"CELI","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2026-02-13","act":"CELI","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2026-02-13","act":"CELI","t":"Interest","st":"","sym":"","nm":"","cur":"CAD","qty":0.01,"px":0.0,"amt":0.01},{"d":"2026-02-18","act":"CELI","t":"MoneyMovement","st":"E_TRFIN","sym":"","nm":"","cur":"CAD","qty":500.0,"px":0.0,"amt":500.0},{"d":"2026-02-20","act":"CELI","t":"MoneyMovement","st":"E_TRFIN","sym":"","nm":"","cur":"CAD","qty":400.0,"px":0.0,"amt":400.0},{"d":"2026-02-20","act":"CELI","t":"Trade","st":"BUY","sym":"COHX","nm":"Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF","cur":"CAD","qty":5.0,"px":34.4606085978,"amt":-172.3},{"d":"2026-02-20","act":"CELI","t":"Trade","st":"BUY","sym":"VRT","nm":"Vertiv Holdings Co (Class A)","cur":"CAD","qty":1.0,"px":340.05278912,"amt":-340.05},{"d":"2026-02-26","act":"CELI","t":"Trade","st":"BUY","sym":"COHX","nm":"Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF","cur":"CAD","qty":7.0,"px":51.3493666485,"amt":-359.45},{"d":"2026-03-05","act":"CELI","t":"Trade","st":"BUY","sym":"COHX","nm":"Investment Managers Series Trust II - Tradr 2X Long Cohr Daily ETF","cur":"CAD","qty":1.0,"px":59.5219650102,"amt":-59.52},{"d":"2026-03-26","act":"CELI","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":0.08,"px":0.0,"amt":0.08},{"d":"2026-04-09","act":"CELI","t":"Dividend","st":"","sym":"","nm":"","cur":"CAD","qty":9.12,"px":0.0,"amt":9.12}]};</script>
 </body>
 </html>

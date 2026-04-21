@@ -44,6 +44,7 @@
   <div id="actions" style="display:none">
     <button id="btnExport">Download JSON for Dashboard</button>
     <button id="btnRefresh" class="secondary">Refresh Data</button>
+    <span id="syncStatus" style="display:none;font-size:12px;margin-left:8px"></span>
     <details style="margin-top:12px">
       <summary style="cursor:pointer;color:#8b8fa3;font-size:12px">Preview raw data</summary>
       <textarea id="preview" readonly></textarea>
@@ -150,10 +151,33 @@
           $('#stats').show();
           $('#actions').show();
           $('#btnExport').removeAttr('disabled');
+
+          // Auto-push to local dashboard server
+          pushToServer(portfolioData);
+
           setStatus('ok', 'Ready! ' + portfolioData.positions.length + ' positions, ' + portfolioData.transactions.length + ' transactions loaded.');
         }).catch(function (err) {
           setStatus('error', 'Error: ' + (err.message || err));
         });
+      }
+
+      function pushToServer(data) {
+        // Try to send data to local dashboard server
+        var serverUrl = 'http://localhost:8777/sync';
+        try {
+          fetch(serverUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          }).then(function (r) {
+            if (r.ok) {
+              $('#syncStatus').text('Synced to dashboard').css('color', '#00d4a1').show();
+              setTimeout(function () { $('#syncStatus').fadeOut(); }, 3000);
+            }
+          }).catch(function () {
+            // Server not running — that's fine, silent fail
+          });
+        } catch (e) { /* ignore */ }
       }
 
       function setStatus(type, msg) {
