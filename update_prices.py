@@ -33,9 +33,9 @@ def yahoo_symbol(symbol, currency, geo):
     """Convert Wealthica symbol to Yahoo Finance symbol."""
     if not symbol:
         return None
-    # Canadian stocks need .TO suffix
+    # Canadian stocks need .TO suffix, dots become dashes (KILO.B -> KILO-B.TO)
     if currency == "cad" and geo == "Canada" and ".TO" not in symbol.upper():
-        return symbol + ".TO"
+        return symbol.replace(".", "-") + ".TO"
     return symbol
 
 
